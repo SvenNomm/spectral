@@ -147,3 +147,25 @@ def alternative_formatting_for_modelling(dict_of_observations, model_order):
             data_set = np.append(data_set, dict_of_observations[key][i, :].reshape(1,model_order+1), axis=0)
 
     return data_set
+
+
+def data_formatter(initial_data, target_data, model_order):
+    print("Aloha! I am going to format the data for dnn!!!")
+    # Make NumPy printouts easier to read.
+
+    initial_data = apply_log(initial_data)
+    target_data = apply_log(target_data)
+
+    initial_data_train, initial_data_test, target_data_train, target_data_test = splitting_wrapper(initial_data,
+                                                                                                   target_data)
+
+    dict_train, _, _ = convert_for_n_order_modelling(initial_data_train, target_data_train, model_order)
+    dict_test, u_test, y_test = convert_for_n_order_modelling(initial_data_test, target_data_test, model_order)
+
+    # dict_train, _, _ = convert_for_n_order_modelling_upsampling(initial_data_train, target_data_train, model_order)
+    # dict_test, u_test, y_test = convert_for_n_order_modelling_upsampling(initial_data_test, target_data_test, model_order)
+
+    data_train = alternative_formatting_for_modelling(dict_train, model_order)
+    data_test = alternative_formatting_for_modelling(dict_test, model_order)
+
+    return data_train, data_test, dict_train, dict_test
