@@ -13,18 +13,22 @@ from preprocessing_module import convert_for_n_order_modelling
 from preprocessing_module import convert_for_n_order_modelling_upsampling
 from preprocessing_module import alternative_formatting_for_modelling
 from preprocessing_module import data_formatter
+from dnn_support import train_model
+from dnn_support import test_model
 
 
 def build_and_compile_model(norm):
+    print("Building convolutional model!")
     model = keras.Sequential([
         norm,
-        layers.Dense(5, activation='sigmoid'),   # 55, 25, 1 works well with model order 5
-        layers.Dense(5, activation='sigmoid'),
-        layers.Dense(1)
+        layers.Dense(55, activation='sigmoid'),   # 55, 25, 1 works well with model order 5
+        layers.Dense(25, activation='sigmoid'),
+        layers.Dense(1, activation='sigmoid')
     ])
 
     model.compile(loss='mean_absolute_error',
                   optimizer=tf.keras.optimizers.Adam(0.001))
+    print("Convolutional model is ready!")
     return model
 
 
@@ -77,25 +81,27 @@ def dnn_regression_wrapper(initial_data, target_data, model_order):
         plt.plot(residuals_nn, color='green')
         plt.title("residuals for a small set")
         plt.show()
+        print("It was convolutional wrapper!")
 
-def lstm_wrapper(initial_data, target_data, model_order):
+
+def lstm_wrapper(initial_data, target_data):
     print("Aloha! this is lstm_wrapper!!!")
-    # Make NumPy printouts easier to read.
-
-    # update model order to one
-    model_order = 1
-    test_results = {}
 
     np.set_printoptions(precision=3, suppress=True)
     print(tf.__version__)
-    data_train, data_test, dict_train, dict_test = data_formatter(initial_data,target_data, model_order)
+    initial_data_train, initial_data_test, target_data_train, target_data_test = splitting_wrapper(initial_data, target_data)
+    #data_train, data_test, dict_train, dict_test = data_formatter(initial_data, target_data, model_order)
 
-    train_features = data_train[:, 0:model_order - 1] #inputs
-    train_labels = data_train[:, model_order] #outputs
+    #train_features = data_train[:, 0:model_order - 1] #inputs
+    #train_labels = data_train[:, model_order] #outputs
 
-    test_features = data_test[:, 0:model_order - 1]
-    test_labels = data_test[:, model_order]
+    #train_features = data_train[:, 0:model_order]  # inputs
+    #train_labels = data_train[:, model_order]  # outputs
 
-    lstm = tf.keras.layers.LSTM(4)
+    lstm_model = train_model(initial_data_train, target_data_train)
+    test_model(initial_data_test, target_data_test, lstm_model)
+    print("Uhhh managed to train")
+
+
 
     
