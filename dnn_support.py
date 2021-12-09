@@ -60,7 +60,9 @@ def build_lstm_model(train_x, train_y):
     model.compile(loss='mean_squared_error', optimizer='adam')
     print("LSTM model is ready")
     model.summary()
+    #
     return model
+
 
 
 def train_model(train_x, train_y):
