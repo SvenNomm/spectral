@@ -21,6 +21,22 @@ def initial_formatting_1(initial_data, target_data):
     return initial_data, target_data
 
 
+def initial_formatting_2(initial_data, target_data):
+    print("Aloha! Performing initial formatting")
+
+    # the following two lines are very local
+    del initial_data['time']
+    del target_data['time']
+    del target_data['HS']
+
+    #target_data.drop(target_data.index[0], inplace=True)
+    #target_data = target_data.reset_index()
+    #del target_data['index']
+
+    print("Initial  formatting has been completed!")
+    return initial_data, target_data
+
+
 def splitting_wrapper(initial_data, target_data):
     print("Hello, this is splitting wrapper!")
     _, cols = initial_data.shape

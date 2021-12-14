@@ -54,9 +54,9 @@ def build_lstm_model(train_x, train_y):
     print("Building LSTM model!")
     rows, cols = train_x.shape
     model = Sequential()
-    model.add(LSTM(8, input_shape=(cols, 1), return_sequences=True))   # 64, 64, 64
-    model.add(LSTM(8))
-    model.add(Dense(64))
+    model.add(LSTM(43, input_shape=(cols, 1), return_sequences=True))   # 64, 64, 64
+    model.add(LSTM(43))
+    model.add(Dense(43))
     model.compile(loss='mean_squared_error', optimizer='adam')
     print("LSTM model is ready")
     model.summary()
