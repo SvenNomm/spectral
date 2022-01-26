@@ -54,9 +54,9 @@ def build_lstm_model(train_x, train_y):
     print("Building LSTM model!")
     rows, cols = train_x.shape
     model = Sequential()
-    model.add(LSTM(43, input_shape=(cols, 1), return_sequences=True))   # 64, 64, 64
-    model.add(LSTM(43))
-    model.add(Dense(43))
+    model.add(LSTM(69, input_shape=(cols, 1), return_sequences=True))   # 64, 64, 64
+    model.add(LSTM(69))
+    model.add(Dense(69))
     model.compile(loss='mean_squared_error', optimizer='adam')
     print("LSTM model is ready")
     model.summary()
@@ -64,13 +64,12 @@ def build_lstm_model(train_x, train_y):
     return model
 
 
-
 def train_model(train_x, train_y):
     print("Training LSTM model!")
     start_time = time.time()
     model = build_lstm_model(train_x, train_y)
-    train_x = apply_log(train_x)
-    train_y = apply_log(train_y)
+    #train_x = apply_log(train_x)
+    #train_y = apply_log(train_y)
 
     train_x = train_x.to_numpy()
     train_y = train_y.to_numpy()
@@ -82,8 +81,8 @@ def train_model(train_x, train_y):
     train_x = train_x.reshape(rows, cols, 1)
     print("training...")
     model.fit(train_x, train_y,
-        epochs=1000,
-        batch_size=28,
+        epochs=2,
+        batch_size=2800,
         verbose=2)
     #for i in range(0, rows):
     #    x = train_x[i, :].reshape(1, cols, 1)
@@ -101,10 +100,10 @@ def train_model(train_x, train_y):
     return model
 
 
-def test_model(test_x, test_y, model):
+def test_model(test_x, test_y, model, test_index):
     print("Testing LSTM model!")
-    test_x = apply_log(test_x)
-    test_y = apply_log(test_y)
+    #test_x = apply_log(test_x)
+    #test_y = apply_log(test_y)
     test_x = test_x.to_numpy()
     test_y = test_y.to_numpy()
 
@@ -117,14 +116,14 @@ def test_model(test_x, test_y, model):
         #x_hat = test_x[i, :, :]
         #x_hat = x_hat[None, :]
         #y_hat = model.predict(test_x[i, :, :])
-
+        print("Testing for datapoint", test_index.loc[i])
         y_ampl = np.abs(np.max(test_y[i, :]) - np.min(test_y[i, :]))
         residuals_nn = (test_y[i, :] - y_hat[i, :]) / y_ampl
 
         fig2, axis = plt.subplots()
         plt.plot(test_y[i, :], color='blue')
         plt.plot(y_hat[i, :], color='orange')
-        plt.title("validation on a small set")
+        #plt.title("validation for", str(test_index.loc[i]))
         plt.show()
 
         fig3, axis = plt.subplots()

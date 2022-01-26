@@ -89,7 +89,7 @@ def lstm_wrapper(initial_data, target_data):
 
     np.set_printoptions(precision=3, suppress=True)
     print(tf.__version__)
-    initial_data_train, initial_data_test, target_data_train, target_data_test = splitting_wrapper(initial_data, target_data)
+    initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = splitting_wrapper(initial_data, target_data)
     #data_train, data_test, dict_train, dict_test = data_formatter(initial_data, target_data, model_order)
 
     #train_features = data_train[:, 0:model_order - 1] #inputs
@@ -99,8 +99,8 @@ def lstm_wrapper(initial_data, target_data):
     #train_labels = data_train[:, model_order]  # outputs
 
     lstm_model = train_model(initial_data_train, target_data_train)
-    test_model(initial_data_test, target_data_test, lstm_model)
-    print("Uhhh managed to train")
+    test_model(initial_data_test, target_data_test, lstm_model, test_index)
+    print("Uhhh managed the task")
 
 
 

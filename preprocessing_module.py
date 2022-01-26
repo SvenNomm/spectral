@@ -36,6 +36,37 @@ def initial_formatting_2(initial_data, target_data):
     print("Initial  formatting has been completed!")
     return initial_data, target_data
 
+def initial_formatting_3(initial_data, target_data):
+    print("Aloha! Performing initial formatting")
+
+    # the following lines are very local
+    del initial_data['time']
+    del target_data['time']
+    del target_data['hs']
+    del target_data['tp']
+    del target_data['tc']
+    del target_data['tm_10']
+    del target_data['tm01']
+    del target_data['tm02']
+    del target_data['kappa']
+    del target_data['meandir']
+    del target_data['pdir']
+    del target_data['meanspread']
+    del target_data['pspread']
+
+    #target_data.drop(target_data.index[0], inplace=True)
+    #target_data = target_data.reset_index()
+    #del target_data['index']
+
+    print("Initial  formatting has been completed!")
+    return initial_data, target_data
+
+
+def delete_nan_rows(df1, df2):
+    selected_rows = df1.loc[df1.isna().any(axis=1)].index.tolist()
+    df1 = df1.drop(df1.index[selected_rows])
+    df2 = df2.drop(df2.index[selected_rows])
+    return df1, df2
 
 def splitting_wrapper(initial_data, target_data):
     print("Hello, this is splitting wrapper!")
@@ -54,6 +85,7 @@ def splitting_wrapper(initial_data, target_data):
     del initial_data_train['index']
 
     initial_data_test = initial_data_test.reset_index()
+    test_index = initial_data_test['index']
     del initial_data_test['index']
 
     target_data_train = target_data_train.reset_index()
@@ -62,7 +94,7 @@ def splitting_wrapper(initial_data, target_data):
     target_data_test = target_data_test.reset_index()
     del target_data_test['index']
     print("Splitting has been completed.")
-    return initial_data_train, initial_data_test, target_data_train, target_data_test
+    return initial_data_train, initial_data_test, target_data_train, target_data_test, test_index
 
 
 def down_sample(initial_data, target_data):
@@ -225,7 +257,7 @@ def data_formatter(initial_data, target_data, model_order):
     #initial_data = apply_log(initial_data)
     #target_data = apply_log(target_data)
 
-    initial_data_train, initial_data_test, target_data_train, target_data_test = splitting_wrapper(initial_data,
+    initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = splitting_wrapper(initial_data,
                                                                                                    target_data)
 
     dict_train, _, _ = convert_for_n_order_modelling(initial_data_train, target_data_train, model_order)
@@ -237,4 +269,4 @@ def data_formatter(initial_data, target_data, model_order):
     data_train = alternative_formatting_for_modelling(dict_train, model_order)
     data_test = alternative_formatting_for_modelling(dict_test, model_order)
     print("Data is ready for dnn!")
-    return data_train, data_test, dict_train, dict_test
+    return data_train, data_test, dict_train, dict_test, test_index
