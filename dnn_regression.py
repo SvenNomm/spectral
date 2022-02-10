@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+#import seaborn as sns
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -90,6 +90,11 @@ def lstm_wrapper(initial_data, target_data):
     np.set_printoptions(precision=3, suppress=True)
     print(tf.__version__)
     initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = splitting_wrapper(initial_data, target_data)
+
+    initial_data_test.to_csv('test_x_28_01_2022_1.csv', sep='\t', encoding='utf-8')
+    target_data_test.to_csv('test_y_28_01_2022_1.csv', sep='\t', encoding='utf-8')
+    test_index.to_csv('test_index_28_01_2022_1.csv', sep='\t', encoding='utf-8')
+
     #data_train, data_test, dict_train, dict_test = data_formatter(initial_data, target_data, model_order)
 
     #train_features = data_train[:, 0:model_order - 1] #inputs
@@ -99,6 +104,8 @@ def lstm_wrapper(initial_data, target_data):
     #train_labels = data_train[:, model_order]  # outputs
 
     lstm_model = train_model(initial_data_train, target_data_train)
+    lstm_model.save('lstm_model_28_01_2022_1.h5')
+
     test_model(initial_data_test, target_data_test, lstm_model, test_index)
     print("Uhhh managed the task")
 

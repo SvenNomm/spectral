@@ -12,8 +12,9 @@ from dnn_regression import lstm_wrapper
 from preprocessing_module import delete_nan_rows
 
 #path = '/Users/sven/kohalikTree/Data/AIRSCS/spectral/'
-path = '/Users/sven/kohalikTree/Data/AIRSCS/spectral_1/'  # to read data submitted on 10.12.2021
-path = '/Users/sven/kohalikTree/Data/AIRSCS/spectral_2/'  # this is for the large data set provided end 2021-jan2022
+#path = '/Users/sven/kohalikTree/Data/AIRSCS/spectral_1/'  # to read data submitted on 10.12.2021
+#path = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1/'  # to read data submitted on 10.12.2021
+path = '/home/sven/kohalikTree/Data/AIRSCS/spectral_2/'  # to read data submitted on 10.12.2021'  # this is for the large data set provided end 2021-jan2022
 
 #model_order = 55
 #load the files
