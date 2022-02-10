@@ -2,6 +2,9 @@
 
 import pandas as pd
 import numpy as np
+import tensorflow as tf
+import tensorflow_datasets as tfds
+
 from scipy.signal import resample
 from sklearn.model_selection import train_test_split
 
@@ -128,12 +131,19 @@ def up_sample(initial_data, target_data):
 
 def apply_log(data):
     print("transfering to the log scale!")
-    rows = len(data)
-    for column in data.columns:
-        for i in range(0, rows):
-            data.loc[i, column] = np.log(data.loc[i, column])
+    columns = data.columns
+
+    data_1 = tf.convert_to_tensor(data)
+    data_1 = tf.math.log(data_1)
+
+    data_1 = data_1.numpy()
+    data_1 = pd.DataFrame(data_1, columns=columns)
+    #rows = len(data)
+    #for column in data.columns:
+    #    for i in range(0, rows):
+    #        data.loc[i, column] = np.log(data.loc[i, column])
     print("log scaling has been completed.")
-    return data
+    return data_1
 
 
 def apply_normalization(data):
