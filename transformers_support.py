@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 from preprocessing_module import splitting_wrapper
 from transformer_1 import build_model
 #def tokenize_data(data):
-from language_based_transformer import preprocess_sequences
+#from language_based_transformer import preprocess_sequences
 from transformer_1 import positional_encoding
 from transformer_1 import transformer_decoder
 from transformer_1 import transformer_encoder
 
 def transformer_workflow_x(initial_data, target_data):
-    preprocess_sequences(initial_data, target_data)
+    #preprocess_sequences(initial_data, target_data)
 
     initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = \
         splitting_wrapper(initial_data, target_data)
@@ -159,7 +159,7 @@ def test_model(test_x, test_y, model, test_index):
 
 
 def transformer_workflow(initial_data, target_data):
-    preprocess_sequences(initial_data, target_data)
+    #preprocess_sequences(initial_data, target_data)
 
     initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = \
         splitting_wrapper(initial_data, target_data)
@@ -224,7 +224,7 @@ def transformer_workflow(initial_data, target_data):
     decoder_outputs = decoder([decoder_inputs, encoder_outputs])
     transformer = keras.Model([encoder_inputs, decoder_inputs], decoder_outputs, name="transformer")
 
-    epochs = 1  # This should be at least 30 for convergence
+    epochs = 30  # This should be at least 30 for convergence
 
     transformer.summary()
 
