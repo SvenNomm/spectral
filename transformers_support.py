@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 from preprocessing_module import splitting_wrapper
 from transformer_1 import build_model
 #def tokenize_data(data):
-from language_based_transformer import preprocess_sequences
+#from language_based_transformer import preprocess_sequences
 from transformer_1 import positional_encoding
 from transformer_1 import transformer_decoder
 from transformer_1 import transformer_encoder
 
 def transformer_workflow_x(initial_data, target_data):
-    preprocess_sequences(initial_data, target_data)
+    #preprocess_sequences(initial_data, target_data)
 
     initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = \
         splitting_wrapper(initial_data, target_data)
@@ -159,7 +159,7 @@ def test_model(test_x, test_y, model, test_index):
 
 
 def transformer_workflow(initial_data, target_data):
-    preprocess_sequences(initial_data, target_data)
+    #preprocess_sequences(initial_data, target_data)
 
     initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = \
         splitting_wrapper(initial_data, target_data)
@@ -208,14 +208,14 @@ def transformer_workflow(initial_data, target_data):
 
     encoder_inputs = keras.Input(shape=input_shape, dtype="float32", name="encoder_inputs")
     #encoder_inputs = keras.Input(shape=input_shape)
-    x = positional_encoding(43, 43, min_freq=1e-4)
+    x = positional_encoding(43, 43, min_freq=0.5)
     x = x * encoder_inputs
     encoder_outputs = transformer_encoder(x, head_size, num_heads, ff_dim, dropout=0)
     encoder = keras.Model(encoder_inputs, encoder_outputs)
     #decoder_inputs = keras.Input(shape=output_shape)
     decoder_inputs = keras.Input(shape=output_shape, dtype="float32", name="decoder_inputs")
     encoded_seq_inputs = keras.Input(shape=(None, embed_dim), name="decoder_state_inputs")
-    x = positional_encoding(43, 43, min_freq=1e-4)
+    x = positional_encoding(43, 43, min_freq=0.5)
     x = x * decoder_inputs
     x = transformer_decoder(x, head_size, num_heads, ff_dim, dropout)
     x = layers.Dropout(0.5)(x)
@@ -224,7 +224,94 @@ def transformer_workflow(initial_data, target_data):
     decoder_outputs = decoder([decoder_inputs, encoder_outputs])
     transformer = keras.Model([encoder_inputs, decoder_inputs], decoder_outputs, name="transformer")
 
-    epochs = 1  # This should be at least 30 for convergence
+    epochs = 30  # This should be at least 30 for convergence
+
+    transformer.summary()
+
+    transformer.compile("rmsprop", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+    )
+    transformer.fit(train_ds, epochs=epochs, validation_data=val_ds)
+
+    #callbacks = [keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)]
+
+    #for i in range(0, len())
+
+    val_x, val_y = validation_data(initial_data_test, target_data_test, batch_size=64)
+    a = transformer([val_x, val_y])
+    a = a.numpy()
+    print(a)
+
+    print("That's all folks!!!")
+    return y_test
+
+
+def transformer_workflow_y(initial_data, target_data):
+    #preprocess_sequences(initial_data, target_data)
+
+    initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = \
+        splitting_wrapper(initial_data, target_data)
+
+    initial_data_train = initial_data_train.to_numpy()
+    initial_data_test = initial_data_test.to_numpy()
+    target_data_train = target_data_train.to_numpy()
+    target_data_test = target_data_test.to_numpy()
+
+
+    x_train = initial_data_train.reshape((initial_data_train.shape[0], initial_data_train.shape[1], 1))
+    x_test = initial_data_test.reshape((initial_data_test.shape[0], initial_data_test.shape[1], 1))
+
+    y_train = target_data_train.reshape((target_data_train.shape[0], target_data_train.shape[1], 1))
+    y_test = target_data_test.reshape((target_data_test.shape[0], target_data_test.shape[1], 1))
+
+    # for now I will skip this line
+    #idx = np.random.permutation(len(x_train))
+    #x_train = x_train[idx]
+    #y_train = y_train[idx]
+
+    # most probably in this case empty row should be added
+    #x_train[y_train == -1] = 0
+    #x_test[y_test == -1] = 0
+
+    #y_train[y_train == -1] = 0
+    #y_test[y_test == -1] = 0
+
+    train_ds = data_for_transformer(initial_data_train, target_data_train, batch_size=64)
+    val_ds = data_for_transformer(initial_data_test, target_data_test,batch_size=64)
+
+    #train_ds = data_for_transformer(x_train, y_train, batch_size=64)
+    #val_ds = data_for_transformer(x_test, y_test,batch_size=64)
+
+
+    latent_dim = 43 #2048
+    num_heads = 8
+
+    input_shape = x_train.shape[1:]
+    output_shape = y_train.shape[1:]
+    dropout = 0
+    mlp_dropout = 0
+    ff_dim = 4
+    embed_dim = 43
+    head_size=256
+
+    encoder_inputs = keras.Input(shape=input_shape, dtype="float32", name="encoder_inputs")
+    #encoder_inputs = keras.Input(shape=input_shape)
+    x = positional_encoding(43, 43, min_freq=1)
+    x = x * encoder_inputs
+    encoder_outputs = transformer_encoder(x, head_size, num_heads, ff_dim, dropout=0)
+    encoder = keras.Model(encoder_inputs, encoder_outputs)
+    #decoder_inputs = keras.Input(shape=output_shape)
+    decoder_inputs = keras.Input(shape=output_shape, dtype="float32", name="decoder_inputs")
+    encoded_seq_inputs = keras.Input(shape=(None, embed_dim), name="decoder_state_inputs")
+    x = positional_encoding(43, 43, min_freq=1)
+    x = x * decoder_inputs
+    x = transformer_decoder(x, head_size, num_heads, ff_dim, dropout)
+    x = layers.Dropout(0.5)(x)
+    decoder_outputs = layers.Dense(latent_dim,activation="relu")(x)
+    decoder = keras.Model([decoder_inputs, encoded_seq_inputs], decoder_outputs)
+    decoder_outputs = decoder([decoder_inputs, encoder_outputs])
+    transformer = keras.Model([encoder_inputs, decoder_inputs], decoder_outputs, name="transformer")
+
+    epochs = 30  # This should be at least 30 for convergence
 
     transformer.summary()
 
