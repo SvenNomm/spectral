@@ -491,6 +491,9 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
         prob = torch.sum(src*torch.sum(model.generator(out),(1)))
     return prob
 
+
+
+
 PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
 
 torch.save(model.state_dict(), PATH)
