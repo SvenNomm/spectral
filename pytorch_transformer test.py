@@ -8,6 +8,8 @@ from torch.autograd import Variable
 import seaborn
 seaborn.set_context(context="talk")
 import pickle
+import datetime
+import time
 
 
 class EncoderDecoder(nn.Module):
@@ -230,7 +232,7 @@ class Embeddings2(nn.Module):
         self.d_model = d_model
 
     def forward(self, x):
-        return torch.cat(4 * [x]).reshape(-1, 43, self.d_model) * math.sqrt(self.d_model)
+        return torch.cat(4 * [x]).reshape(-1, 42, self.d_model) * math.sqrt(self.d_model)
 
     #def forward(self, x):
     #    return torch.cat(4 * [x]).reshape(-1, 7, self.d_model) * math.sqrt(self.d_model)
@@ -284,8 +286,10 @@ class Batch:
         self.src = src
         self.src_mask = (src != pad).unsqueeze(-2)
         if trg is not None:
-            self.trg = trg#[:, :-1] # self.trg = trg[:, :-1]
-            self.trg_y = trg# [:, 1:] #self.trg_y = trg[:, 1:]
+            #self.trg = trg#[:, :-1] # self.trg = trg[:, :-1]
+            #self.trg_y = trg# [:, 1:] #self.trg_y = trg[:, 1:]
+            self.trg = trg[:, :-1]
+            self.trg_y = trg[:, 1:]
             self.trg_mask = \
                 self.make_std_mask(self.trg, pad)
             self.ntokens = (self.trg_y != pad).data.sum()
@@ -365,9 +369,9 @@ def get_std_opt(model):
 def data_gen(V, batch, nbatches):
     "Generate random data for a src-tgt copy task."
     for i in range(nbatches):
-        data1 = torch.from_numpy(X0.reshape(3463, 43))  # .long(). #3772,8
+        data1 = torch.from_numpy(X0.reshape(-1, 43))  # .long(). #3772,8
         data1[:, 0] = 1
-        data2 = torch.from_numpy(Y0.reshape(3463, 43))  # .long()
+        data2 = torch.from_numpy(Y0.reshape(-1, 43))  # .long()
         data2[:, 0] = 1
         src = Variable(data1, requires_grad=False)
         tgt = Variable(data2, requires_grad=False)
@@ -384,7 +388,7 @@ class SimpleLossCompute:
 
     def __call__(self, x, y, norm):
         x = self.generator(x)
-        x = torch.sum(x.reshape(3463, 43, -1), (2))
+        x = torch.sum(x.reshape(3461, 42, -1), (2))
         loss = self.criterion(torch.sum(x, (0)),
                               torch.sum(y, (0)))  # / norm
         if loss < 0.01:
@@ -408,6 +412,16 @@ def data_gen_2(V, batch, nbatches):
         tgt = Variable(data2, requires_grad=False)
         yield Batch(src, tgt, 0)
 
+def data_gen_3(V, batch, nbatches):
+    "Generate random data for a src-tgt copy task."
+    for i in range(nbatches):
+        data1 = torch.from_numpy(X0.reshape(3463,43))#.long(). #3772,8
+        data1[:, 0] = 1
+        data2 = torch.from_numpy(Y0.reshape(3463,43))#.long()
+        data2[:, 0] = 1
+        src = Variable(data1, requires_grad=False)
+        tgt = Variable(data2, requires_grad=False)
+        return Batch(src, tgt, 0)
 
 print(torch.__version__)
 
@@ -433,11 +447,11 @@ X0 = initial_data_train.astype(np.float32)
 Y0 = target_data_train.astype(np.float32)
 
 
-#X0=[0:-2]
-#Y0=trainX[1:-1]
+X0=X0[0:-2]
+Y0=Y0[1:-1]
 
-#X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
-#Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
+X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
+Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
 
 #place=2000
 #X0=X0[place]
@@ -451,22 +465,39 @@ model = make_model(V, V, N=2)
 model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
         torch.optim.Adam(model.parameters(), lr=learning, betas=(0.9, 0.98), eps=1e-9))
 
+#a = data_gen_3(V, 30, 20)
+start_time = datetime.datetime.now()
+print("------ Start time ------")
 
-for epoch in range(60):
+for epoch in range(1):
     #model.train()
-    run_epoch(data_gen(V, 30, 20), model, SimpleLossCompute(model.generator, criterion, model_opt))
+    prev_time = datetime.datetime.now()
+    print(datetime.datetime.now())
 
+    run_epoch(data_gen(V, 30, 20), model, SimpleLossCompute(model.generator, criterion, model_opt))
+    print("Epoch: ", epoch, 'Epoch time: ', (datetime.datetime.now() - prev_time))
+    #print("--- %s seconds ---" % (time.time() - start_time))
+
+print("Training time: ", (datetime.datetime.now() - start_time))
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
     memory = model.encode(src, src_mask)
-    ys = torch.ones(1, 43).fill_(start_symbol).type_as(src.data)
-    for i in range(43):
+    ys = torch.ones(1, 42).fill_(start_symbol).type_as(src.data)
+    for i in range(43-1):
         out = model.decode(memory, src_mask,
                            Variable(ys),
                            Variable(subsequent_mask(ys.size(1))
                                     .type_as(src.data)))
         prob = torch.sum(src*torch.sum(model.generator(out),(1)))
     return prob
+
+PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
+
+torch.save(model.state_dict(), PATH)
+#place=2000
+#X0=X0[place]
+#Y0=[Y0[place][0:7].reshape(1,-1)]
+
 
 X0 = X0[2000, :]
 src = Variable(torch.Tensor(X0.reshape(1,-1)) )
