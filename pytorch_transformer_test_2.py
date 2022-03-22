@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math, copy, time
 from torch.autograd import Variable
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import seaborn
 seaborn.set_context(context="talk")
 import pickle
@@ -155,7 +155,8 @@ class DecoderLayer(nn.Module):
 def subsequent_mask(size):
     "Mask out subsequent positions."
     attn_shape = (1, size, size)
-    subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('float32')
+    subsequent_mask = np.ones(attn_shape).astype('float32')
+    #subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('float32')
     return torch.from_numpy(subsequent_mask) == 0
 
 
@@ -428,7 +429,7 @@ def data_gen_3(V, batch, nbatches):
 print(torch.__version__)
 
 #PATH = '/content/spectral/'
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/'
+PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_2/'
 pkl_file = open(PATH + 'initial_data_train.pkl', 'rb')
 initial_data_train= pickle.load(pkl_file)
 pkl_file.close()
@@ -454,14 +455,15 @@ Y0 = target_data_train.astype(np.float32)
 X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
 Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
 
+
 #place=2000
 #X0=X0[place]
 #Y0=[Y0[place][0:7].reshape(1,-1)]
 
-V = 200
+V = 2000
 criterion = nn.MSELoss()
 learning=0.001
-model = make_model(V, V, N=2)
+model = make_model(V, V, N=4)
 
 model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
         torch.optim.Adam(model.parameters(), lr=learning, betas=(0.9, 0.98), eps=1e-9))
@@ -493,25 +495,33 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
     return prob
 
 
-
-
 PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
 
 torch.save(model.state_dict(), PATH)
-#place=2000
-#X0=X0[place]
-#Y0=[Y0[place][0:7].reshape(1,-1)]
 
 
-X0 = X0[2000, :]
-src = Variable(torch.Tensor(X0.reshape(1,-1)))
-src_mask = Variable(torch.ones(1,1,43))
+X1 = initial_data_test.astype(np.float32)
+Y1 = target_data_test.astype(np.float32)
+X1 = X1.reshape(X1.shape[0],X1.shape[1],1).astype(np.float32)
+Y1 = Y1.reshape(Y1.shape[0],Y1.shape[1],1).astype(np.float32)
 
-pred = []
-for i in range(0, 43):
-    predd=greedy_decode(model, src, src_mask, max_len=43, start_symbol=i)
-    pred.append(predd.detach().numpy())
-    a = predd.detach().numpy()
-    print(i, predd.detach().numpy())
 
-print("actual:", Y0[2000, :],"prediction:",pred.detach().numpy())
+def plot_wrapper(X,Y):
+    rows, cols,_ = X.shape
+    fig = plt.figure()
+    for i in range(0, 10):
+        src = Variable(torch.Tensor(X[i,:,:].reshape(1,-1)))
+        src_mask = Variable(torch.ones(1,1,cols))
+
+        pred = []
+        for j in range(0, cols):
+            predd=greedy_decode(model, src, src_mask, max_len=cols, start_symbol=i)
+            pred.append([predd.detach().numpy(), Y[i, j, 0], predd.detach().numpy() - Y[i, j, 0]])
+
+        pred = np.array(pred)
+        plt.plot(X[i, :, 0], color='blue', linewidth=0.1)
+        plt.plot(pred[:, 1], color='red', linewidth=0.1)
+    plt.show()
+
+
+plot_wrapper(X0,Y0)
