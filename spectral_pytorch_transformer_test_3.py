@@ -5,12 +5,13 @@ import torch.nn.functional as F
 import math, copy, time
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
-import seaborn
-seaborn.set_context(context="talk")
+#import seaborn
+#seaborn.set_context(context="talk")
 import pickle
 import datetime
 import time
-
+#from spectral_local_path_settings_ailab import *
+from spectral_local_path_settings import *
 
 class EncoderDecoder(nn.Module):
     """
@@ -261,7 +262,7 @@ class PositionalEncoding(nn.Module):
 
 #def make_model(src_vocab, tgt_vocab, N=6,
 #               d_model=512, d_ff=2048, h=8, dropout=0.1):
-def make_model(src_vocab, tgt_vocab, N=6,
+def make_model(src_vocab, tgt_vocab, N=2,
                d_model=4, d_ff=32, h=4, dropout=0.1):  # d_ff is changable param
     "Helper: Construct a model from hyperparameters."
     c = copy.deepcopy
@@ -372,9 +373,9 @@ def get_std_opt(model):
 def data_gen(V, batch, nbatches):
     "Generate random data for a src-tgt copy task."
     for i in range(nbatches):
-        data1 = torch.from_numpy(X0.reshape(-1, 43))  # .long(). #3772,8
+        data1 = torch.from_numpy(X0.reshape(-1, 43))#.long()  # .long(). #3772,8
         data1[:, 0] = 1
-        data2 = torch.from_numpy(Y0.reshape(-1, 43))  # .long()
+        data2 = torch.from_numpy(Y0.reshape(-1, 43))#.long()  # .long()
         data2[:, 0] = 1
         src = Variable(data1, requires_grad=False)
         tgt = Variable(data2, requires_grad=False)
@@ -392,6 +393,7 @@ class SimpleLossCompute:
     def __call__(self, x, y, norm):
         x = self.generator(x)
         x = torch.sum(x.reshape(3463, 42, -1), (2))
+        #x = torch.sum(x.reshape(x.shape[0], 42, -1), (2))
         loss = self.criterion(torch.sum(x, (0)),
                               torch.sum(y, (0)))  # / norm
         if loss < 0.01:
@@ -406,11 +408,15 @@ class SimpleLossCompute:
 
 def data_gen_2(V, batch, nbatches):
     "Generate random data for a src-tgt copy task."
+    data_1 = X0.reshape(3463, 43)
+    data_1[:, 0] = 1
+    data_2 = Y0.reshape(3463, 43)
+    data_2[:, 0] = 1
     for i in range(nbatches):
-        data1 = torch.from_numpy(X0.reshape(3463,43))#.long(). #3772,8
-        data1[:, 0] = 1
-        data2 = torch.from_numpy(Y0.reshape(3463,43))#.long()
-        data2[:, 0] = 1
+        data1 = torch.from_numpy(data_1[i * 173 : (i+1)*173, :])#.long(). #3772,8
+        #data1[:, 0] = 1
+        data2 = torch.from_numpy(data_2[i * 173 : (i+1)*173, :])#.long()
+        #data2[:, 0] = 1
         src = Variable(data1, requires_grad=False)
         tgt = Variable(data2, requires_grad=False)
         yield Batch(src, tgt, 0)
@@ -426,41 +432,40 @@ def data_gen_3(V, batch, nbatches):
         tgt = Variable(data2, requires_grad=False)
         return Batch(src, tgt, 0)
 
-print(torch.__version__)
+#pp_type = 'raw'
+#pp_type = 'normalized'
+pp_type = '_log_scale_'
+#pp_type = 'norm_log'
+#pp_type = 'log_norm'
 
-#PATH = '/content/spectral/'
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_2/'
-pkl_file = open(PATH + 'initial_data_train.pkl', 'rb')
+initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names(pp_type)
+
+pkl_file = open(initial_data_train_fname, 'rb')
 initial_data_train= pickle.load(pkl_file)
 pkl_file.close()
 
-pkl_file = open(PATH + 'target_data_train.pkl', 'rb')
+pkl_file = open(target_data_train_fname, 'rb')
 target_data_train= pickle.load(pkl_file)
 pkl_file.close()
 
-pkl_file = open(PATH + 'initial_data_test.pkl', 'rb')
+pkl_file = open(initial_data_valid_fname, 'rb')
 initial_data_test= pickle.load(pkl_file)
 pkl_file.close()
 
-pkl_file = open(PATH + 'target_data_test.pkl', 'rb')
+pkl_file = open(target_data_valid_fname, 'rb')
 target_data_test= pickle.load(pkl_file)
 pkl_file.close()
+
 
 X0 = initial_data_train.astype(np.float32)
 Y0 = target_data_train.astype(np.float32)
 
-#X0=X0[0:-2]
-#Y0=Y0[1:-1]
 
 X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
 Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
 
 
-#place=2000
-#X0=X0[place]
-#Y0=[Y0[place][0:7].reshape(1,-1)]
-
-V = 2000
+V = 3463
 criterion = nn.MSELoss()
 learning=0.001
 model = make_model(V, V, N=4)
@@ -468,7 +473,7 @@ model = make_model(V, V, N=4)
 model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
         torch.optim.Adam(model.parameters(), lr=learning, betas=(0.9, 0.98), eps=1e-9))
 
-#a = data_gen_3(V, 30, 20)
+
 start_time = datetime.datetime.now()
 print("------ Start time ------")
 
@@ -483,45 +488,7 @@ for epoch in range(1):
 
 print("Training time: ", (datetime.datetime.now() - start_time))
 
-def greedy_decode(model, src, src_mask, max_len, start_symbol):
-    memory = model.encode(src, src_mask)
-    ys = torch.ones(1, 42).fill_(start_symbol).type_as(src.data)
-    for i in range(43-1):
-        out = model.decode(memory, src_mask,
-                           Variable(ys),
-                           Variable(subsequent_mask(ys.size(1))
-                                    .type_as(src.data)))
-        prob = torch.sum(src*torch.sum(model.generator(out),(1)))
-    return prob
 
-
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
-
-torch.save(model.state_dict(), PATH)
-
-
-X1 = initial_data_test.astype(np.float32)
-Y1 = target_data_test.astype(np.float32)
-X1 = X1.reshape(X1.shape[0],X1.shape[1],1).astype(np.float32)
-Y1 = Y1.reshape(Y1.shape[0],Y1.shape[1],1).astype(np.float32)
-
-
-def plot_wrapper(X,Y):
-    rows, cols,_ = X.shape
-    fig = plt.figure()
-    for i in range(0, 10):
-        src = Variable(torch.Tensor(X[i,:,:].reshape(1,-1)))
-        src_mask = Variable(torch.ones(1,1,cols))
-
-        pred = []
-        for j in range(0, cols):
-            predd=greedy_decode(model, src, src_mask, max_len=cols, start_symbol=i)
-            pred.append([predd.detach().numpy(), Y[i, j, 0], predd.detach().numpy() - Y[i, j, 0]])
-
-        pred = np.array(pred)
-        plt.plot(Y[i, :, 0], color='blue', linewidth=0.1)
-        plt.plot(pred[:, 1], color='red', linewidth=0.1)
-    plt.show()
-
-
-plot_wrapper(X0,Y0)
+model_path = return_model_path()
+model_name = 'transformer_1' + pp_type + start_time.strftime("%m_%d_%Y_%H_%M_%S")
+torch.save(model, model_path+model_name)

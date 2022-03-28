@@ -1,16 +1,13 @@
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import math, copy, time
-from torch.autograd import Variable
-import matplotlib.pyplot as plt
-import seaborn
-seaborn.set_context(context="talk")
-import pickle
-import datetime
-import time
+# this is stand alone code for spectral transformer validation
 
+import torch
+from torch.autograd import Variable
+import numpy as np
+from spectral_local_path_settings import *
+import matplotlib.pyplot as plt
+import pickle
+import torch.nn as nn
+import math, copy, time
 
 class EncoderDecoder(nn.Module):
     """
@@ -426,62 +423,6 @@ def data_gen_3(V, batch, nbatches):
         tgt = Variable(data2, requires_grad=False)
         return Batch(src, tgt, 0)
 
-print(torch.__version__)
-
-#PATH = '/content/spectral/'
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_2/'
-pkl_file = open(PATH + 'initial_data_train.pkl', 'rb')
-initial_data_train= pickle.load(pkl_file)
-pkl_file.close()
-
-pkl_file = open(PATH + 'target_data_train.pkl', 'rb')
-target_data_train= pickle.load(pkl_file)
-pkl_file.close()
-
-pkl_file = open(PATH + 'initial_data_test.pkl', 'rb')
-initial_data_test= pickle.load(pkl_file)
-pkl_file.close()
-
-pkl_file = open(PATH + 'target_data_test.pkl', 'rb')
-target_data_test= pickle.load(pkl_file)
-pkl_file.close()
-
-X0 = initial_data_train.astype(np.float32)
-Y0 = target_data_train.astype(np.float32)
-
-#X0=X0[0:-2]
-#Y0=Y0[1:-1]
-
-X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
-Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
-
-
-#place=2000
-#X0=X0[place]
-#Y0=[Y0[place][0:7].reshape(1,-1)]
-
-V = 2000
-criterion = nn.MSELoss()
-learning=0.001
-model = make_model(V, V, N=4)
-
-model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
-        torch.optim.Adam(model.parameters(), lr=learning, betas=(0.9, 0.98), eps=1e-9))
-
-#a = data_gen_3(V, 30, 20)
-start_time = datetime.datetime.now()
-print("------ Start time ------")
-
-for epoch in range(1):
-    #model.train()
-    prev_time = datetime.datetime.now()
-    print(datetime.datetime.now())
-
-    run_epoch(data_gen(V, 30, 20), model, SimpleLossCompute(model.generator, criterion, model_opt))
-    print("Epoch: ", epoch, 'Epoch time: ', (datetime.datetime.now() - prev_time))
-    #print("--- %s seconds ---" % (time.time() - start_time))
-
-print("Training time: ", (datetime.datetime.now() - start_time))
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
     memory = model.encode(src, src_mask)
@@ -494,16 +435,62 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
         prob = torch.sum(src*torch.sum(model.generator(out),(1)))
     return prob
 
+model_path = return_model_path()
+#model_name = 'transformer_103_22_2022_22_24_26'
+#model_name = 'transformer_103_23_2022_20_54_50'
+model_name = 'transformer_103_27_2022_00_11_49'
+#model = TheModelClass(*args, **kwargs)
+model = torch.load(model_path + model_name)
+#model = model.eval()
 
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
+initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names()
 
-torch.save(model.state_dict(), PATH)
+pkl_file = open(initial_data_train_fname, 'rb')
+initial_data_train= pickle.load(pkl_file)
+pkl_file.close()
+
+pkl_file = open(target_data_train_fname, 'rb')
+target_data_train= pickle.load(pkl_file)
+pkl_file.close()
+
+pkl_file = open(initial_data_valid_fname, 'rb')
+initial_data_test= pickle.load(pkl_file)
+pkl_file.close()
+
+pkl_file = open(target_data_valid_fname, 'rb')
+target_data_test= pickle.load(pkl_file)
+pkl_file.close()
+
+
+
+X0 = initial_data_train.astype(np.float32)
+Y0 = target_data_train.astype(np.float32)
+
+
+
+
+
+X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
+Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
+
+
+
+
+
 
 
 X1 = initial_data_test.astype(np.float32)
 Y1 = target_data_test.astype(np.float32)
 X1 = X1.reshape(X1.shape[0],X1.shape[1],1).astype(np.float32)
 Y1 = Y1.reshape(Y1.shape[0],Y1.shape[1],1).astype(np.float32)
+
+
+fig = plt.figure()
+for i in range(0, len(X1)):
+    plt.plot(X1[i, :], color='blue', linewidth=0.1)
+    plt.plot(Y1[i, :], color='yellow', linewidth=0.1)
+
+plt.show()
 
 
 def plot_wrapper(X,Y):
@@ -520,8 +507,8 @@ def plot_wrapper(X,Y):
 
         pred = np.array(pred)
         plt.plot(Y[i, :, 0], color='blue', linewidth=0.1)
-        plt.plot(pred[:, 1], color='red', linewidth=0.1)
+        plt.plot(pred[:, 0], color='red', linewidth=0.1)
     plt.show()
 
 
-plot_wrapper(X0,Y0)
+plot_wrapper(X1,Y1)
