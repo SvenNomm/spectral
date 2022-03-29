@@ -29,6 +29,11 @@ def return_processed_file_names(pp_type):
     initial_data_valid_fname = processed_data_path + initial_name_base + pp_type + 'initial_valid.pkl'
     target_data_valid_fname = processed_data_path + target_name_base + pp_type + 'target_valid.pkl'
     valid_data_index_fname = processed_data_path + target_name_base + pp_type + 'target_index.pkl'
-
+    print("I am about to load the following files:")
+    print(initial_data_train_fname)
+    print(target_data_train_fname)
+    print(initial_data_valid_fname)
+    print(target_data_valid_fname)
+    print(valid_data_index_fname)
     return initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname
 
