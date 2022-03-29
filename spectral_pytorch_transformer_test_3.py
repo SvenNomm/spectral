@@ -476,11 +476,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
         torch.optim.Adam(model.parameters(), lr=learning, betas=(0.9, 0.98), eps=1e-9))
-
+# :)
 start_time = datetime.datetime.now()
 print("------ Start time ------")
 
-for epoch in range(300):
+for epoch in range(200):
     #model.train()
     prev_time = datetime.datetime.now()
     print(datetime.datetime.now())
