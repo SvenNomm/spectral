@@ -143,11 +143,11 @@ def splitting_wrapper(initial_data, target_data):
     print("Splitting has been completed.")
     return initial_data_train, initial_data_test, target_data_train, target_data_test, test_index
 
-#pp_type = 'raw'
-#pp_type = 'normalized'
+#pp_type = '_raw_'
+#pp_type = '_normalized_'
 pp_type = '_log_scale_'
-#pp_type = 'norm_log'
-#pp_type = 'log_norm'
+#pp_type = '_norm_log_'
+#pp_type = '_log_norm_'
 
 path, processed_data_path = return_path()
 initial_data_file, target_data_file = return_file_names() # get the file names
@@ -168,10 +168,12 @@ target_data = pd.read_csv(target_data_file, sep=',')
 #plt.show()
 
 initial_data, target_data = initial_formatting_2(initial_data, target_data)
-#initial_data = apply_normalization(initial_data)
-#target_data = apply_normalization(target_data)
 initial_data = apply_log(initial_data)
 target_data = apply_log(target_data)
+#initial_data = apply_normalization(initial_data)
+#target_data = apply_normalization(target_data)
+
+
 fig = plt.figure()
 for i in range(0, len(initial_data)):
     plt.plot(initial_data.loc[i, :], color='blue', linewidth=0.1)
