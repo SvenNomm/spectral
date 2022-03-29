@@ -428,7 +428,8 @@ def data_gen_3(V, batch, nbatches):
 print(torch.__version__)
 
 #PATH = '/content/spectral/'
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/'
+#PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/'
+PATH = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1/'
 pkl_file = open(PATH + 'initial_data_train.pkl', 'rb')
 initial_data_train= pickle.load(pkl_file)
 pkl_file.close()
@@ -470,7 +471,7 @@ model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
 start_time = datetime.datetime.now()
 print("------ Start time ------")
 
-for epoch in range(1):
+for epoch in range(300):
     #model.train()
     prev_time = datetime.datetime.now()
     print(datetime.datetime.now())
@@ -495,8 +496,8 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
 
 
 
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
-
+#PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
+PATH = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1/test_model_1'
 torch.save(model.state_dict(), PATH)
 #place=2000
 #X0=X0[place]

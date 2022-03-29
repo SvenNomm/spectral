@@ -435,23 +435,15 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
         prob = torch.sum(src*torch.sum(model.generator(out),(1)))
     return prob
 
-#pp_type = 'raw'
-#pp_type = 'normalized'
-pp_type = '_log_scale_'
-#pp_type = 'norm_log'
-#pp_type = '_log_norm_'
-
 model_path = return_model_path()
 #model_name = 'transformer_103_22_2022_22_24_26'
 #model_name = 'transformer_103_23_2022_20_54_50'
-#model_name = 'transformer_103_27_2022_00_11_49'
-model_name = 'transformer_1_log_scale_03_28_2022_21_03_58'
+model_name = 'transformer_103_27_2022_00_11_49'
 #model = TheModelClass(*args, **kwargs)
-
 model = torch.load(model_path + model_name)
 #model = model.eval()
 
-initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names(pp_type)
+initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names()
 
 pkl_file = open(initial_data_train_fname, 'rb')
 initial_data_train= pickle.load(pkl_file)
@@ -495,8 +487,8 @@ Y1 = Y1.reshape(Y1.shape[0],Y1.shape[1],1).astype(np.float32)
 
 fig = plt.figure()
 for i in range(0, len(X1)):
-    plt.plot(X0[i, :], color='blue', linewidth=0.1)
-    plt.plot(Y0[i, :], color='yellow', linewidth=0.1)
+    plt.plot(X1[i, :], color='blue', linewidth=0.1)
+    plt.plot(Y1[i, :], color='yellow', linewidth=0.1)
 
 plt.show()
 
@@ -504,7 +496,7 @@ plt.show()
 def plot_wrapper(X,Y):
     rows, cols,_ = X.shape
     fig = plt.figure()
-    for i in range(10, 20):
+    for i in range(0, 10):
         src = Variable(torch.Tensor(X[i,:,:].reshape(1,-1)))
         src_mask = Variable(torch.ones(1,1,cols))
 
@@ -514,10 +506,9 @@ def plot_wrapper(X,Y):
             pred.append([predd.detach().numpy(), Y[i, j, 0], predd.detach().numpy() - Y[i, j, 0]])
 
         pred = np.array(pred)
-        a = Y[i, :, 0]
         plt.plot(Y[i, :, 0], color='blue', linewidth=0.1)
         plt.plot(pred[:, 0], color='red', linewidth=0.1)
     plt.show()
 
 
-plot_wrapper(X0,Y0)
+plot_wrapper(X1,Y1)

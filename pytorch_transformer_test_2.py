@@ -262,7 +262,7 @@ class PositionalEncoding(nn.Module):
 #def make_model(src_vocab, tgt_vocab, N=6,
 #               d_model=512, d_ff=2048, h=8, dropout=0.1):
 def make_model(src_vocab, tgt_vocab, N=6,
-               d_model=4, d_ff=32, h=4, dropout=0.1):  # d_ff is changable param
+               d_model=4, d_ff=32, h=4, dropout=0.1):
     "Helper: Construct a model from hyperparameters."
     c = copy.deepcopy
     attn = MultiHeadedAttention(h, d_model)
@@ -495,7 +495,7 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
     return prob
 
 
-PATH = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/testmodel1'
+PATH = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1'
 
 torch.save(model.state_dict(), PATH)
 
@@ -519,7 +519,7 @@ def plot_wrapper(X,Y):
             pred.append([predd.detach().numpy(), Y[i, j, 0], predd.detach().numpy() - Y[i, j, 0]])
 
         pred = np.array(pred)
-        plt.plot(Y[i, :, 0], color='blue', linewidth=0.1)
+        plt.plot(X[i, :, 0], color='blue', linewidth=0.1)
         plt.plot(pred[:, 1], color='red', linewidth=0.1)
     plt.show()
 

@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import pickle
 import datetime
 import time
-from spectral_local_path_settings_ailab import *
-#from spectral_local_path_settings import *
-
+#from spectral_local_path_settings_ailab import *
+from spectral_local_r2d2_path_settings import *
+from tokenize_numeric import *
 class EncoderDecoder(nn.Module):
     """
     A standard Encoder-Decoder architecture. Base for this and many
@@ -156,8 +156,8 @@ class DecoderLayer(nn.Module):
 def subsequent_mask(size):
     "Mask out subsequent positions."
     attn_shape = (1, size, size)
-    #subsequent_mask = np.ones(attn_shape).astype('float32')
-    subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('float32')
+    subsequent_mask = np.ones(attn_shape).astype('float32')
+    #subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('float32')
     return torch.from_numpy(subsequent_mask) == 0
 
 
@@ -262,8 +262,8 @@ class PositionalEncoding(nn.Module):
 
 #def make_model(src_vocab, tgt_vocab, N=6,
 #               d_model=512, d_ff=2048, h=8, dropout=0.1):
-def make_model(src_vocab, tgt_vocab, N=2,
-               d_model=4, d_ff=32, h=4, dropout=0.1):  # d_ff is changable param
+def make_model(src_vocab, tgt_vocab, N=6,
+               d_model=4, d_ff=64, h=4, dropout=0.1):  # d_ff is changable param
     "Helper: Construct a model from hyperparameters."
     c = copy.deepcopy
     attn = MultiHeadedAttention(h, d_model)
@@ -432,14 +432,11 @@ def data_gen_3(V, batch, nbatches):
         tgt = Variable(data2, requires_grad=False)
         return Batch(src, tgt, 0)
 
-#print(torch.cuda.is_available())
-#print(torch.cuda.get_device_name(0))
-
-#pp_type = '_raw_'
-pp_type = '_normalized_'
+#pp_type = 'raw'
+#pp_type = 'normalized'
 #pp_type = '_log_scale_'
-#pp_type = 'norm_log'
-#pp_type = '_log_norm_'
+#pp_type = '_norm_log_'
+pp_type = '_log_norm_'
 
 initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names(pp_type)
 
@@ -464,6 +461,15 @@ X0 = initial_data_train.astype(np.float32)
 Y0 = target_data_train.astype(np.float32)
 
 
+#bins = return_range(100, initial_data_train, initial_data_test)
+#idt =tokenize_numeric(initial_data_train, bins)
+#idt_restored = token2numeric(idt, bins)
+#fig = plt.figure()
+#for i in range(0, len(idt)):
+#    plt.plot(initial_data_train[i, :], color='blue', linewidth=0.1)
+#    plt.plot(idt_restored[i, :], color='yellow', linewidth=0.1)
+
+#plt.show()
 X0=X0.reshape(X0.shape[0],X0.shape[1],1).astype(np.float32)
 Y0=Y0.reshape(Y0.shape[0],Y0.shape[1],1).astype(np.float32)
 
@@ -476,7 +482,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 model_opt = NoamOpt(model.src_embed[0].d_model, 10, 400,
         torch.optim.Adam(model.parameters(), lr=learning, betas=(0.9, 0.98), eps=1e-9))
-# :)
+
+
 start_time = datetime.datetime.now()
 print("------ Start time ------")
 
@@ -485,7 +492,7 @@ for epoch in range(200):
     prev_time = datetime.datetime.now()
     print(datetime.datetime.now())
 
-    run_epoch(data_gen(V, 30, 20, device), model, SimpleLossCompute(model.generator, criterion, model_opt))
+    run_epoch(data_gen(V, 30, 20,device), model, SimpleLossCompute(model.generator, criterion, model_opt))
     print("Epoch: ", epoch, 'Epoch time: ', (datetime.datetime.now() - prev_time))
     #print("--- %s seconds ---" % (time.time() - start_time))
 

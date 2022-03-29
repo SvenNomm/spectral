@@ -1,13 +1,13 @@
 # actually this file should not be shared over git as it contains local path information
 
 def return_path():
-    initial_data_path = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/'
-    preprocessed_data_path = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/'
+    initial_data_path = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1/'
+    preprocessed_data_path = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1/'
     return initial_data_path, preprocessed_data_path
 
 
 def return_model_path():
-    model_path = '/Users/svennomm/kohalikTree/Data/AIRSCS/spectral_1/'
+    model_path = '/home/sven/kohalikTree/Data/AIRSCS/spectral_1/'
     return model_path
 
 def return_file_names():
