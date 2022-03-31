@@ -28,10 +28,13 @@ class EncoderDecoder(nn.Module):
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         "Take in and process masked src and target sequences."
+        a = self.decode(self.encode(src, src_mask), src_mask,
+                    tgt, tgt_mask)
         return self.decode(self.encode(src, src_mask), src_mask,
                            tgt, tgt_mask)
 
     def encode(self, src, src_mask):
+        b = self.encoder(self.src_embed(src), src_mask)
         return self.encoder(self.src_embed(src), src_mask)
 
     def decode(self, memory, src_mask, tgt, tgt_mask):
@@ -93,6 +96,7 @@ class SublayerConnection(nn.Module):
 
     def forward(self, x, sublayer):
         "Apply residual connection to any sublayer with the same size."
+        c = x + self.dropout(sublayer(self.norm(x)))
         return x + self.dropout(sublayer(self.norm(x)))
 
 
@@ -216,6 +220,8 @@ class Embeddings(nn.Module):
         self.d_model = d_model
 
     def forward(self, x):
+        #d = self.lut(x)
+        #print(d)
         return self.lut(x) * math.sqrt(self.d_model)
 
 
@@ -294,6 +300,7 @@ def run_epoch(data_iter, model, loss_compute):
     total_loss = 0
     tokens = 0
     for i, batch in enumerate(data_iter):
+        #print(i)
         out = model.forward(batch.src, batch.trg, batch.src_mask, batch.trg_mask)
         loss = loss_compute(out, batch.trg_y, batch.ntokens)
         total_loss += loss
@@ -400,19 +407,35 @@ def loss(x):
 def data_gen(V, batch, nbatches, device):
     "Generate random data for a src-tgt copy task."
     for i in range(nbatches):
-        data = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
+        dd = np.random.randint(1, 100, size=(batch, 43))
+        data = torch.from_numpy(dd)
+        #data = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
         data[:, 0] = 1
         src = Variable(data, requires_grad=False).to(device)
         tgt = Variable(data, requires_grad=False).to(device)
+        aaa = Batch(src, tgt, 0)
         yield Batch(src, tgt, 0)
 
 
 def data_gen_1(V, x, y,  batch, nbatches, device):
-    "Generate random data for a src-tgt copy task."
     for i in range(nbatches):
-        data_x = torch.from_numpy(x[i*batch: (i+1)*batch, 0:V])
-        data_y = torch.from_numpy(y[i*batch: (i+1)*batch, 0:V])
-        data_x[:, 0] = 1
+        if (i+1)*nbatches <= len(x):
+            ddd = x[i * batch: (i + 1) * batch, 0:V]
+            dd = np.random.randint(1, 100, size=(batch, 43))
+            data_x = torch.from_numpy(x[i*batch: (i+1)*batch, 0:43])
+            data_y = torch.from_numpy(y[i*batch: (i+1)*batch, 0:43])
+            #data_x[:, 0] = 1
+            data_y[:, 0] = 1
+            src = Variable(data_x, requires_grad=False).to(device)
+            tgt = Variable(data_y, requires_grad=False).to(device)
+            yield Batch(src, tgt, 0)
+
+
+def data_gen_2(V, batch, nbatches, device):
+    for i in range(nbatches):
+        data_x = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
+        data_y = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
+        #data_x[:, 0] = 1
         data_y[:, 0] = 1
         src = Variable(data_x, requires_grad=False).to(device)
         tgt = Variable(data_y, requires_grad=False).to(device)
@@ -477,38 +500,51 @@ Y0 = target_data_train.astype(np.float32)
 bins_initial = return_range(100, initial_data_train, initial_data_test)
 id_train = tokenize_numeric(initial_data_train, bins_initial)
 id_test = tokenize_numeric(initial_data_test, bins_initial)
+#dd = np.random.randint(1, 100, size=(20, 43))
 
 bins_target = return_range(100, target_data_train, target_data_test)
 tgt_train = tokenize_numeric(target_data_train, bins_target)
 tgt_test = tokenize_numeric(target_data_test, bins_target)
 
-
-
-V = 43
+V = 100
 criterion = LabelSmoothing(size=V, padding_idx=0, smoothing=0.0)
 model = make_model(V, V, N=2)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 model = model.to(device)
 
 model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
         torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
 
+# for epoch in range(10):
+#    model.train()
+#    run_epoch(data_gen(V, 20, 20, device), model,
+#              SimpleLossCompute(model.generator, criterion, model_opt))
+#    model.eval()
+#    print(run_epoch(data_gen(V, 20, 20, device), model,
+#                    SimpleLossCompute(model.generator, criterion, None)))
+
+# for epoch in range(10):
+#    print(epoch)
+#    model.train()
+#    run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
+#              SimpleLossCompute(model.generator, criterion, model_opt))
+#    print("eval")
+#    model.eval()
+#    print(run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
+#                    SimpleLossCompute(model.generator, criterion, None)))
+
 for epoch in range(10):
    model.train()
-   run_epoch(data_gen(V, 20, 20, device), model,
+   run_epoch(data_gen_2(V, 20, 20, device), model,
              SimpleLossCompute(model.generator, criterion, model_opt))
    model.eval()
-   print(run_epoch(data_gen(V, 20, 5, device), model,
+   print(run_epoch(data_gen_2(V, 20, 20, device), model,
                    SimpleLossCompute(model.generator, criterion, None)))
 
-# for epoch in range(20):
-#     model.train()
-#     run_epoch(data_gen_1(V,id_train, tgt_train, 10, 40, device), model,
-#               SimpleLossCompute(model.generator, criterion, model_opt))
-#     model.eval()
-#     print(run_epoch(data_gen_1(V,id_train, tgt_train, 10, 40, device), model,
-#                    SimpleLossCompute(model.generator, criterion, None)))
+
+
 
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
