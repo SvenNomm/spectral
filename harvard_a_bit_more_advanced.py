@@ -220,8 +220,8 @@ class Embeddings(nn.Module):
         self.d_model = d_model
 
     def forward(self, x):
-        d = self.lut(x)
-        #print(d.size, type(d))
+        #d = self.lut(x)
+        #print(d)
         return self.lut(x) * math.sqrt(self.d_model)
 
 
@@ -417,23 +417,18 @@ def data_gen(V, batch, nbatches, device):
         yield Batch(src, tgt, 0)
 
 
-def data_gen_1(V, xx, yy,  batch, nbatches, device):
-    #np.putmask(xx, yy >= 100, 99)
+def data_gen_1(V, x, y,  batch, nbatches, device):
     for i in range(nbatches):
-        if (i+1)*nbatches <= len(xx):
-            #ddd = x[i * batch: (i + 1) * batch, 0:V]
+        if (i+1)*nbatches <= len(x):
+            ddd = x[i * batch: (i + 1) * batch, 0:V]
             dd = np.random.randint(1, 100, size=(batch, 43))
-            #print(dd.size, type(dd))
-            #print(ddd.size,type(ddd))
-            #print(i, i*batch, (i+1)*batch)
-            #print(np.max(dd))
-            #print(np.max(ddd))
-
-            data_x = torch.from_numpy(xx[i*batch: (i+1)*batch, 0:43])
-            #data_y = torch.from_numpy(yy[i*batch: (i+1)*batch, 0:43])
-            #data_x = torch.from_numpy(dd)
-            data_y = torch.from_numpy(dd)
-
+            print(dd.size, type(dd))
+            print(ddd.size,type(ddd))
+            print(i, i*batch, (i+1)*batch)
+            data_x = torch.from_numpy(x[i*batch: (i+1)*batch, 0:43])
+            data_y = torch.from_numpy(y[i*batch: (i+1)*batch, 0:43])
+            data_xx = torch.from_numpy(dd)
+            data_yy = torch.from_numpy(dd)
             #data_x[:, 0] = 1
             data_y[:, 0] = 1
             src = Variable(data_x, requires_grad=False).to(device)
@@ -516,12 +511,12 @@ bins_target = return_range(100, target_data_train, target_data_test)
 tgt_train = tokenize_numeric(target_data_train, bins_target)
 tgt_test = tokenize_numeric(target_data_test, bins_target)
 
-V = 101
+V = 100
 criterion = LabelSmoothing(size=V, padding_idx=0, smoothing=0.0)
 model = make_model(V, V, N=2)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#device = 'cpu'
+device = 'cpu'
 model = model.to(device)
 
 model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
@@ -535,15 +530,15 @@ model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
 #    print(run_epoch(data_gen(V, 20, 20, device), model,
 #                    SimpleLossCompute(model.generator, criterion, None)))
 
-for epoch in range(10):
-   print(epoch)
-   model.train()
-   run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
-             SimpleLossCompute(model.generator, criterion, model_opt))
-   print("eval")
-   model.eval()
-   print(run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
-                   SimpleLossCompute(model.generator, criterion, None)))
+# for epoch in range(10):
+#    print(epoch)
+#    model.train()
+#    run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
+#              SimpleLossCompute(model.generator, criterion, model_opt))
+#    print("eval")
+#    model.eval()
+#    print(run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
+#                    SimpleLossCompute(model.generator, criterion, None)))
 
 # for epoch in range(10):
 #    model.train()
@@ -571,23 +566,65 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
         ys = torch.cat([ys, torch.ones(1, 1).type_as(src.data).fill_(next_word)], dim=1)
     return ys
 
-print("--- Have no idea ---")
-model.eval()
-
-for i in range(0, len(id_test)):
-
-    src = Variable(torch.LongTensor(id_test[i, 0:43].reshape([1, 43]))).to(device)
-    #src_1 = Variable(torch.LongTensor([[1,2,3,4,5,6,7,8,9,10]]) ).to(device)
-    src_mask = Variable(torch.ones(1, 1, 43) ).to(device)
-    print(greedy_decode(model, src, src_mask, max_len=V, start_symbol=1))
-    print("Reference:", tgt_test[i, 0:43])
-
-
-
-
+# print("--- Have no idea ---")
+# model.eval()
+#
+# for i in range(0, len(id_test)):
+#
+#     src = Variable(torch.LongTensor(id_test[i, 0:V].reshape([1, V]))).to(device)
+#     #src_1 = Variable(torch.LongTensor([[1,2,3,4,5,6,7,8,9,10]]) ).to(device)
+#     src_mask = Variable(torch.ones(1, 1, V) ).to(device)
+#     print(greedy_decode(model, src, src_mask, max_len=V, start_symbol=1))
+#     print("Reference:", tgt_test[i, 0:V])
 
 #idt_restored = token2numeric(idt, bins)
 #bins = return_range(100, initial_data_train, initial_data_test)
 #idt =tokenize_numeric(initial_data_train, bins)
 #idt_restored = token2numeric(idt, bins)
+
+class MyIterator(data.Iterator):
+    def create_batches(self):
+        if self.train:
+            def pool(d, random_shuffler):
+                for p in data.batch(d, self.batch_size * 100):
+                    p_batch = data.batch(
+                        sorted(p, key=self.sort_key),
+                        self.batch_size, self.batch_size_fn)
+                    for b in random_shuffler(list(p_batch)):
+                        yield b
+
+            self.batches = pool(self.data(), self.random_shuffler)
+
+        else:
+            self.batches = []
+            for b in data.batch(self.data(), self.batch_size,
+                                self.batch_size_fn):
+                self.batches.append(sorted(b, key=self.sort_key))
+
+
+def rebatch(pad_idx, batch):
+    "Fix order in torchtext to match ours"
+    src, trg = batch.src.transpose(0, 1), batch.trg.transpose(0, 1)
+    return Batch(src, trg, pad_idx)
+
+# GPUs to use
+
+devices = [0]
+
+
+if True:
+    pad_idx = TGT.vocab.stoi["<blank>"]
+    model = make_model(len(SRC.vocab), len(TGT.vocab), N=6)
+    #model.cuda()
+    criterion = LabelSmoothing(size=len(TGT.vocab), padding_idx=pad_idx, smoothing=0.1)
+    criterion.cuda()
+    BATCH_SIZE = 12000
+    train_iter = MyIterator(train, batch_size=BATCH_SIZE, device=0,
+                            repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)),
+                            batch_size_fn=batch_size_fn, train=True)
+    valid_iter = MyIterator(val, batch_size=BATCH_SIZE, device=0,
+                            repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)),
+                            batch_size_fn=batch_size_fn, train=False)
+    model_par = nn.DataParallel(model, device_ids=devices)
+
 
