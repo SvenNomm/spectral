@@ -104,8 +104,8 @@ def test_model(test_x, test_y, model, test_index):
     print("Testing LSTM model!")
     #test_x = apply_log(test_x)
     #test_y = apply_log(test_y)
-    test_x = test_x.to_numpy()
-    test_y = test_y.to_numpy()
+    #test_x = test_x.to_numpy()
+    #test_y = test_y.to_numpy()
 
     rows, cols = test_y.shape
     test_x = test_x.reshape(rows, cols, 1)

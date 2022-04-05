@@ -13,6 +13,7 @@ import pickle
 from spectral_local_r2d2_path_settings import *
 from tokenize_numeric import *
 import datetime
+from model_evaluation_support import *
 class EncoderDecoder(nn.Module):
     """
     A standard Encoder-Decoder architecture. Base for this and many
@@ -476,14 +477,36 @@ def rebatch(pad_idx, batch):
     src, trg = batch.src.transpose(0, 1), batch.trg.transpose(0, 1)
     return Batch(src, trg, pad_idx)
 
-
+def greedy_decode(model, src, src_mask, max_len, start_symbol):
+    memory = model.encode(src, src_mask)
+    ys = torch.ones(1, 1).fill_(start_symbol).type_as(src.data)
+    for i in range(max_len-1):
+        out = model.decode(memory, src_mask,
+                           Variable(ys),
+                           Variable(subsequent_mask(ys.size(1))
+                                    .type_as(src.data)))
+        prob = model.generator(out[:, -1])
+        _, next_word = torch.max(prob, dim = 1)
+        next_word = next_word.data[0]
+        ys = torch.cat([ys, torch.ones(1, 1).type_as(src.data).fill_(next_word)], dim=1)
+    return ys
 
 ### Actual code starts here###
 #pp_type = '_raw_'
 #pp_type = '_normalized_'
-#pp_type = '_log_scale_'
-pp_type = '_norm_log_'
+pp_type = '_log_scale_'
+#pp_type = '_norm_log_'
 #pp_type = '_log_norm_'
+
+model_path = return_model_path()
+#model_name = 'transformer_103_22_2022_22_24_26'
+#model_name = 'transformer_103_23_2022_20_54_50'
+#model_name = 'transformer_103_27_2022_00_11_49'
+model_name = 'transformer_1__log_scale__1001_04_05_2022_17_21_34'
+#model = TheModelClass(*args, **kwargs)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = torch.load(model_path + model_name).to(device)
+model = model.to(device)
 
 
 initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names(pp_type)
@@ -504,7 +527,10 @@ pkl_file = open(target_data_valid_fname, 'rb')
 target_data_test= pickle.load(pkl_file)
 pkl_file.close()
 
-
+pkl_file = open(valid_data_index_fname, 'rb')
+valid_data_index= pickle.load(pkl_file)
+pkl_file.close()
+#valid_data_index = valid_data_index.to_numpy()
 X0 = initial_data_train.astype(np.float32)
 Y0 = target_data_train.astype(np.float32)
 
@@ -521,82 +547,105 @@ tgt_test = tokenize_numeric(target_data_test, bins_target)
 V = 1001
 
 criterion = LabelSmoothing(size=V, padding_idx=0, smoothing=0.0)
-model = make_model(V, V, N=2)
+#model = make_model(V, V, N=2)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #device = 'cpu'
 model = model.to(device)
 
 model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
         torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
 
-# for epoch in range(10):
-#    model.train()
-#    run_epoch(data_gen(V, 20, 20, device), model,
-#              SimpleLossCompute(model.generator, criterion, model_opt))
-#    model.eval()
-#    print(run_epoch(data_gen(V, 20, 20, device), model,
-#                    SimpleLossCompute(model.generator, criterion, None)))
 
-for epoch in range(1000):
-   print(epoch)
-   model.train()
-   run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
-             SimpleLossCompute(model.generator, criterion, model_opt))
-   print("eval")
-   model.eval()
-   print(run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
-                   SimpleLossCompute(model.generator, criterion, None)))
+def test_model(test_x, test_y, y_hat,  test_index):
+    print("Testing LSTM model!")
+    #test_x = apply_log(test_x)
+    #test_y = apply_log(test_y)
+    #test_x = test_x.to_numpy()
+    #test_y = test_y.to_numpy()
 
-# for epoch in range(10):
-#    model.train()
-#    run_epoch(data_gen_2(V, 20, 20, device), model,
-#              SimpleLossCompute(model.generator, criterion, model_opt))
-#    model.eval()
-#    print(run_epoch(data_gen_2(V, 20, 20, device), model,
-#                    SimpleLossCompute(model.generator, criterion, None)))
+    rows, cols = test_y.shape
+    #test_x = test_x.reshape(rows, cols, 1)
 
+    for i in range(0, rows):
+        #x_hat = test_x[i, :, :]
+        #x_hat = x_hat[None, :]
+        #y_hat = model.predict(test_x[i, :, :])
+        print("Testing for datapoint", test_index[i])
+        y_ampl = np.abs(np.max(test_y[i, :]) - np.min(test_y[i, :]))
+        residuals_nn = (test_y[i, :] - y_hat[i, :]) / y_ampl
 
+        fig2, axis = plt.subplots()
+        #plt.plot(test_y[i, :], color='blue')
+        plt.plot(y_hat[i, :], color='orange')
+        #plt.title("validation for", str(test_index.loc[i]))
+        plt.show()
 
-
-
-def greedy_decode(model, src, src_mask, max_len, start_symbol):
-    memory = model.encode(src, src_mask)
-    ys = torch.ones(1, 1).fill_(start_symbol).type_as(src.data)
-    for i in range(max_len-1):
-        out = model.decode(memory, src_mask,
-                           Variable(ys),
-                           Variable(subsequent_mask(ys.size(1))
-                                    .type_as(src.data)))
-        prob = model.generator(out[:, -1])
-        _, next_word = torch.max(prob, dim = 1)
-        next_word = next_word.data[0]
-        ys = torch.cat([ys, torch.ones(1, 1).type_as(src.data).fill_(next_word)], dim=1)
-    return ys
+        fig3, axis = plt.subplots()
+        plt.plot(residuals_nn, color='green')
+        plt.title("residuals for a small set")
+        plt.show()
+    print("Transformer had model has been tested! ")
 
 
-start_time = datetime.datetime.now()
-model_path = return_model_path()
-model_name = 'transformer_1_' + pp_type + '_' + str(V) + '_' + start_time.strftime("%m_%d_%Y_%H_%M_%S")
-torch.save(model, model_path+model_name)
+def plot_wrapper(X, Y):
+    rows, cols = X.shape
+    fig = plt.figure()
+    pred = []
+    for i in range(0, 100):
+        src = Variable(torch.LongTensor(X[i, 0:43].reshape([1, 43]))).to(device)
+        #src = Variable(torch.Tensor(X[i,:,:].reshape(1,-1))).to(device)
+        src_mask = Variable(torch.ones(1,1,cols)).to(device)
+
+
+        #for j in range(0, cols):
+        predd=greedy_decode(model, src, src_mask, max_len=cols, start_symbol=i).to('cpu')
+        pred.append(predd.detach().numpy()) #.detach().numpy(), Y[i, j, 0], predd.detach().numpy() - Y[i, j, 0]
+        #print(i)
+
+        #pred = np.array(pred)
+        #a = Y[i, :, 0]
+        plt.plot(Y[i, :], color='blue', linewidth=0.1)
+        print(i)
+        b = predd.detach().numpy()
+        #print(b)
+        plt.plot(b[0,:], color='red', linewidth=0.1)
+    plt.show()
+    return pred
+
+
+# for i in range(0, len(id_test)):
+#     src = Variable(torch.LongTensor(id_test[i, 0:43].reshape([1, 43]))).to(device)
+#     #src_1 = Variable(torch.LongTensor([[1,2,3,4,5,6,7,8,9,10]]) ).to(device)
+#     src_mask = Variable(torch.ones(1, 1, 43) ).to(device)
+#     print(greedy_decode(model, src, src_mask, max_len=43, start_symbol=1))
+#     print("Reference:", tgt_test[i, 0:43])
+
+
+pred = plot_wrapper(id_test, tgt_test)
+
+# plot untokenized
+testing_set_power = 100#len(pred)
+#fig = plt.figure()
+y_hat = []
+goodness_descriptors = []
+for i in range(0, testing_set_power):
+    forecasted = token2numeric(pred[i], bins_target)
+    mse, rho, max_test, max_hat, delta_max_val, delta_max_loc = goodness_descriptor(target_data_test[i, :], forecasted[0,:])
+    goodness_descriptors.append([int(valid_data_index.loc[i]), mse, rho, max_test, max_hat, delta_max_val, delta_max_loc])
+    #plt.plot(target_data_test[i, :], color='blue', linewidth=0.1)
+    #plt.plot(forecasted[0, :], color='red', linewidth=0.1)
+
+goodness_descriptors = np.array(goodness_descriptors)
+columns = ['index', 'mse', 'rho', 'max_test', 'max_hat', 'delta_max_val', 'delta_max_loc']
+goodness_descriptors = pd.DataFrame(goodness_descriptors, columns = columns)
+
+time = datetime.datetime.now()
+path = return_model_path()
+data_name = 'validation_of_transformer_1_' + pp_type + '_' + str(V) + '_' + time.strftime("%m_%d_%Y_%H_%M_%S")+'.csv'
+goodness_descriptors.to_csv(path + data_name, index = False)
+
 print("That's all folks!!!")
-print("--- Have no idea ---")
-model.eval()
+#plt.show()
 
-for i in range(0, 10):
-
-    src = Variable(torch.LongTensor(id_test[i, 0:43].reshape([1, 43]))).to(device)
-    #src_1 = Variable(torch.LongTensor([[1,2,3,4,5,6,7,8,9,10]]) ).to(device)
-    src_mask = Variable(torch.ones(1, 1, 43) ).to(device)
-    print(greedy_decode(model, src, src_mask, max_len=43, start_symbol=1))
-    print("Reference:", tgt_test[i, 0:43])
-
-
-
-
-
-#idt_restored = token2numeric(idt, bins)
-#bins = return_range(100, initial_data_train, initial_data_test)
-#idt =tokenize_numeric(initial_data_train, bins)
-#idt_restored = token2numeric(idt, bins)
 
