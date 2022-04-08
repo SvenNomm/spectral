@@ -167,19 +167,19 @@ target_data = pd.read_csv(target_data_file, sep=',')
 
 #plt.show()
 
-initial_data, target_data = initial_formatting_2(initial_data, target_data)
+initial_data, target_data = initial_formatting_3(initial_data, target_data)
 initial_data = apply_log(initial_data)
 target_data = apply_log(target_data)
 #initial_data = apply_normalization(initial_data)
 #target_data = apply_normalization(target_data)
 
 
-fig = plt.figure()
-for i in range(0, len(initial_data)):
-    plt.plot(initial_data.loc[i, :], color='blue', linewidth=0.1)
-    plt.plot(target_data.loc[i, :], color='yellow', linewidth=0.1)
+#fig = plt.figure()
+#for i in range(0, len(initial_data)):
+#    plt.plot(initial_data.loc[i, :], color='blue', linewidth=0.1)
+#    plt.plot(target_data.loc[i, :], color='yellow', linewidth=0.1)
 
-plt.show()
+#plt.show()
 
 initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = splitting_wrapper(initial_data, target_data)
 

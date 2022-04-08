@@ -78,7 +78,7 @@ def splitting_wrapper(initial_data, target_data):
     target_columns = target_data.columns
     initial_columns = initial_data.columns
     merged_df = pd.concat([initial_data, target_data], axis=1)
-    train_df, test_df = train_test_split(merged_df, test_size=0.3)
+    train_df, test_df = train_test_split(merged_df, test_size=0.2)
     initial_data_train = train_df.iloc[:, 0: cols]
     initial_data_test = test_df.iloc[:, 0: cols]
     target_data_train = train_df.iloc[:, cols: cols * 2]

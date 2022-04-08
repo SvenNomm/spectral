@@ -493,8 +493,8 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
 
 ### Actual code starts here###
 #pp_type = '_raw_'
-#pp_type = '_normalized_'
-pp_type = '_log_scale_'
+pp_type = '_normalized_'
+#pp_type = '_log_scale_'
 #pp_type = '_norm_log_'
 #pp_type = '_log_norm_'
 
@@ -502,7 +502,7 @@ model_path = return_model_path()
 #model_name = 'transformer_103_22_2022_22_24_26'
 #model_name = 'transformer_103_23_2022_20_54_50'
 #model_name = 'transformer_103_27_2022_00_11_49'
-model_name = 'transformer_1__log_scale__1001_04_05_2022_17_21_34'
+model_name = 'transformer_1__normalized__101_04_08_2022_14_08_22'
 #model = TheModelClass(*args, **kwargs)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = torch.load(model_path + model_name).to(device)
@@ -535,16 +535,16 @@ X0 = initial_data_train.astype(np.float32)
 Y0 = target_data_train.astype(np.float32)
 
 
-bins_initial = return_range(1000, initial_data_train, initial_data_test)
+bins_initial = return_range(100, initial_data_train, initial_data_test)
 id_train = tokenize_numeric(initial_data_train, bins_initial)
 id_test = tokenize_numeric(initial_data_test, bins_initial)
 #dd = np.random.randint(1, 100, size=(20, 43))
 
-bins_target = return_range(1000, target_data_train, target_data_test)
+bins_target = return_range(100, target_data_train, target_data_test)
 tgt_train = tokenize_numeric(target_data_train, bins_target)
 tgt_test = tokenize_numeric(target_data_test, bins_target)
 
-V = 1001
+V = 101
 
 criterion = LabelSmoothing(size=V, padding_idx=0, smoothing=0.0)
 #model = make_model(V, V, N=2)

@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 from preprocessing_module import apply_log
 from preprocessing_module import apply_normalization
 from sklearn.preprocessing import normalize
-
-
+from model_evaluation_support import goodness_descriptor
+import pandas as pd
+import datetime
 class LstmSettings:
     EPOCHS = 10
     WINDOW_SIZE = 20
@@ -68,8 +69,8 @@ def train_model(train_x, train_y):
     print("Training LSTM model!")
     start_time = time.time()
     model = build_lstm_model(train_x, train_y)
-    #train_x = apply_log(train_x)
-    #train_y = apply_log(train_y)
+    train_x = apply_log(train_x)
+    train_y = apply_log(train_y)
 
     train_x = train_x.to_numpy()
     train_y = train_y.to_numpy()
@@ -81,7 +82,7 @@ def train_model(train_x, train_y):
     train_x = train_x.reshape(rows, cols, 1)
     print("training...")
     model.fit(train_x, train_y,
-        epochs=2,
+        epochs=200,
         batch_size=2800,
         verbose=2)
     #for i in range(0, rows):
@@ -102,34 +103,45 @@ def train_model(train_x, train_y):
 
 def test_model(test_x, test_y, model, test_index):
     print("Testing LSTM model!")
-    #test_x = apply_log(test_x)
+    test_x = apply_log(test_x)
     #test_y = apply_log(test_y)
-    #test_x = test_x.to_numpy()
-    #test_y = test_y.to_numpy()
+    test_x = test_x.to_numpy()
+    test_y = test_y.to_numpy()
 
     rows, cols = test_y.shape
     test_x = test_x.reshape(rows, cols, 1)
 
-
     y_hat = model.predict(test_x, batch_size=2, verbose=0)
+    goodness_descriptors = []
+    print(rows)
     for i in range(0, rows):
         #x_hat = test_x[i, :, :]
         #x_hat = x_hat[None, :]
         #y_hat = model.predict(test_x[i, :, :])
-        print("Testing for datapoint", test_index.loc[i])
-        y_ampl = np.abs(np.max(test_y[i, :]) - np.min(test_y[i, :]))
-        residuals_nn = (test_y[i, :] - y_hat[i, :]) / y_ampl
+        mse, rho, max_test, max_hat, delta_max_val, delta_max_loc = goodness_descriptor(test_y[i, :], np.exp(y_hat[i, :]))
+        goodness_descriptors.append([int(test_index[i]), mse, rho, max_test, max_hat, delta_max_val, delta_max_loc])
+        #print("Testing for datapoint", test_index.loc[i])
+        #y_ampl = np.abs(np.max(test_y[i, :]) - np.min(test_y[i, :]))
+        #residuals_nn = (test_y[i, :] - y_hat[i, :]) / y_ampl
 
-        fig2, axis = plt.subplots()
-        plt.plot(test_y[i, :], color='blue')
-        plt.plot(y_hat[i, :], color='orange')
+        #fig2, axis = plt.subplots()
+        #plt.plot(test_y[i, :], color='blue')
+        #plt.plot(y_hat[i, :], color='orange')
         #plt.title("validation for", str(test_index.loc[i]))
-        plt.show()
+        #plt.show()
 
-        fig3, axis = plt.subplots()
-        plt.plot(residuals_nn, color='green')
-        plt.title("residuals for a small set")
-        plt.show()
+        #fig3, axis = plt.subplots()
+        #plt.plot(residuals_nn, color='green')
+        #plt.title("residuals for a small set")
+        #plt.show()
+    goodness_descriptors = np.array(goodness_descriptors)
+    columns = ['index', 'mse', 'rho', 'max_test', 'max_hat', 'delta_max_val', 'delta_max_loc']
+    goodness_descriptors = pd.DataFrame(goodness_descriptors, columns=columns)
+
+    time = datetime.datetime.now()
+    #path = return_model_path()
+    data_name = 'validation_of_LSTM_' + time.strftime("%m_%d_%Y_%H_%M_%S")+'.csv'
+    goodness_descriptors.to_csv(data_name, index=False)
     print("LSTM model has been tested! ")
 
 

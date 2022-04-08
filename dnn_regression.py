@@ -89,11 +89,11 @@ def lstm_wrapper(initial_data, target_data):
 
     np.set_printoptions(precision=3, suppress=True)
     print(tf.__version__)
-    initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = splitting_wrapper(initial_data, target_data)
-
-    initial_data_test.to_csv('test_x_28_01_2022_1.csv', sep='\t', encoding='utf-8')
-    target_data_test.to_csv('test_y_28_01_2022_1.csv', sep='\t', encoding='utf-8')
-    test_index.to_csv('test_index_28_01_2022_1.csv', sep='\t', encoding='utf-8')
+    initial_data_train, initial_data_valid, target_data_train, target_data_valid, valid_index = splitting_wrapper(initial_data, target_data)
+    initial_data_train, initial_data_test, target_data_train, target_data_test, no_need_index = splitting_wrapper(initial_data_train, target_data_train)
+    initial_data_test.to_csv('test_x_08_04_2022_1.csv', sep='\t', encoding='utf-8')
+    target_data_test.to_csv('test_y_08_04_2022_1.csv', sep='\t', encoding='utf-8')
+    valid_index.to_csv('test_index_08_04_2022_1.csv', sep='\t', encoding='utf-8')
 
     #data_train, data_test, dict_train, dict_test = data_formatter(initial_data, target_data, model_order)
 
@@ -106,7 +106,7 @@ def lstm_wrapper(initial_data, target_data):
     lstm_model = train_model(initial_data_train, target_data_train)
     lstm_model.save('lstm_model_28_01_2022_1.h5')
 
-    test_model(initial_data_test, target_data_test, lstm_model, test_index)
+    test_model(initial_data_valid, target_data_valid, lstm_model, valid_index)
     print("Uhhh managed the task")
 
 
