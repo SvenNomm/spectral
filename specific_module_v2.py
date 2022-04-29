@@ -3,6 +3,7 @@ import pandas as pd
 import tensorflow as tf
 from  sklearn.model_selection import train_test_split
 import numpy as np
+import pickle
 
 
 def initial_formatting_gen_2(initial_data_1, initial_data_2,  target_data):
@@ -39,7 +40,7 @@ def splitting_wrapper(initial_data, target_data):
     target_columns = target_data.columns
     initial_columns = initial_data.columns
     merged_df = pd.concat([initial_data, target_data], axis=1)
-    train_df, test_df = train_test_split(merged_df, test_size=0.2)
+    train_df, test_df = train_test_split(merged_df, test_size=0.3)
     initial_data_train = train_df.iloc[:, 0: cols]
     initial_data_test = test_df.iloc[:, 0: cols]
     target_data_train = train_df.iloc[:, cols: cols * 2]
@@ -115,18 +116,24 @@ def return_data_sets(path, order, winx):
 
     initial_data = element_wise_lin_div(initial_data_1, initial_data_2)
     initial_data = apply_log(initial_data)
+    target_data = apply_log(target_data)
     return initial_data, target_data
 
-def combine_katsed(katse_nr):
+
+def combine_katsed(katse_nr, order):
     # this part is tailored particularly for the case of merging different katsed
     path_1 = "/home/sven/kohalikTree/Data/AIRSCS/wave/data_v2/katse_0" + str(katse_nr) + "/"
     path_2 = "/home/sven/kohalikTree/Data/AIRSCS/wave/data_v2/katse_0" + str(katse_nr + 1) + "/"
-    initial_data_1, target_data_1 = return_data_sets(path_1, order=1, winx=256)
-    initial_data_2, target_data_2 = return_data_sets(path_2, order=1, winx=512)
+    initial_data_1, target_data_1 = return_data_sets(path_1, order=order, winx=256)
+    initial_data_2, target_data_2 = return_data_sets(path_2, order=order, winx=512)
 
     initial_data = pd.concat([initial_data_1, initial_data_2], ignore_index=True)
     target_data = pd.concat([target_data_1, target_data_2], ignore_index=True)
 
     initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = splitting_wrapper(initial_data, target_data)
+    file_name = path_1 + "katse_0" + str(katse_nr) + str(katse_nr + 1) + '_testing_data.pkl'
+    with open(file_name, 'wb') as f:
+        pickle.dump(['initial_data_test', 'target_data_test', 'test_index'], f)
 
-    return initial_data_train, initial_data_test, target_data_train, target_data_test, test_index
+    initial_data_train, initial_data_valid, target_data_train, target_data_valid, valid_index = splitting_wrapper(initial_data_train, target_data_train)
+    return initial_data_train, initial_data_valid, target_data_train, target_data_valid, valid_index

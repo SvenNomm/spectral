@@ -413,7 +413,7 @@ def loss(x):
 def data_gen(V, batch, nbatches, device):
     "Generate random data for a src-tgt copy task."
     for i in range(nbatches):
-        dd = np.random.randint(1, 100, size=(batch, 43))
+        dd = np.random.randint(1, 100, size=(batch, 46))
         data = torch.from_numpy(dd)
         #data = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
         data[:, 0] = 1
@@ -428,15 +428,15 @@ def data_gen_1(V, xx, yy,  batch, nbatches, device):
     for i in range(nbatches):
         if (i+1)*nbatches <= len(xx):
             #ddd = x[i * batch: (i + 1) * batch, 0:V]
-            dd = np.random.randint(1, 100, size=(batch, 43))
+            dd = np.random.randint(1, 100, size=(batch, 46))
             #print(dd.size, type(dd))
             #print(ddd.size,type(ddd))
             #print(i, i*batch, (i+1)*batch)
             #print(np.max(dd))
             #print(np.max(ddd))
 
-            data_x = torch.from_numpy(xx[i*batch: (i+1)*batch, 0:43])
-            data_y = torch.from_numpy(yy[i*batch: (i+1)*batch, 0:43])
+            data_x = torch.from_numpy(xx[i*batch: (i+1)*batch, 0:46])
+            data_y = torch.from_numpy(yy[i*batch: (i+1)*batch, 0:46])
             #data_x = torch.from_numpy(dd)
             #data_y = torch.from_numpy(dd)
 
@@ -449,8 +449,8 @@ def data_gen_1(V, xx, yy,  batch, nbatches, device):
 
 def data_gen_2(V, batch, nbatches, device):
     for i in range(nbatches):
-        data_x = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
-        data_y = torch.from_numpy(np.random.randint(1, 100, size=(batch, 43)))
+        data_x = torch.from_numpy(np.random.randint(1, 100, size=(batch, 46)))
+        data_y = torch.from_numpy(np.random.randint(1, 100, size=(batch, 46)))
         #data_x[:, 0] = 1
         data_y[:, 0] = 1
         src = Variable(data_x, requires_grad=False).to(device)
@@ -484,8 +484,13 @@ def rebatch(pad_idx, batch):
 
 
 ### Actual code starts here###
-initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = specific_module_v2.combine_katsed(katse_nr=1)
+initial_data_train, initial_data_test, target_data_train, target_data_test, test_index = specific_module_v2.combine_katsed(katse_nr=1, order=1)
 
+initial_data_train = initial_data_train.values
+initial_data_test = initial_data_test.values
+target_data_train = target_data_train.values
+target_data_test = target_data_test.values
+test_index = test_index.values
 
 # initial_data_train_fname, target_data_train_fname, initial_data_valid_fname, target_data_valid_fname, valid_data_index_fname = return_processed_file_names(pp_type)
 #
@@ -567,11 +572,11 @@ model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
 for epoch in range(300):
    print(epoch)
    model.train()
-   run_epoch(data_gen_1(V, id_train, tgt_train, 40, 84, device), model,
+   run_epoch(data_gen_1(V, id_train, tgt_train, 5, 84, device), model,
              SimpleLossCompute(model.generator, criterion, model_opt))
    print("eval")
    model.eval()
-   print(run_epoch(data_gen_1(V, id_train, tgt_train, 40, 84, device), model,
+   print(run_epoch(data_gen_1(V, id_train, tgt_train, 5, 84, device), model,
                    SimpleLossCompute(model.generator, criterion, None)))
 
 # for epoch in range(10):
@@ -609,11 +614,11 @@ model.eval()
 
 for i in range(0, 10):
 
-    src = Variable(torch.LongTensor(id_test[i, 0:43].reshape([1, 43]))).to(device)
+    src = Variable(torch.LongTensor(id_test[i, 0:46].reshape([1, 46]))).to(device)
     #src_1 = Variable(torch.LongTensor([[1,2,3,4,5,6,7,8,9,10]]) ).to(device)
-    src_mask = Variable(torch.ones(1, 1, 43) ).to(device)
-    print(greedy_decode(model, src, src_mask, max_len=43, start_symbol=1))
-    print("Reference:", tgt_test[i, 0:43])
+    src_mask = Variable(torch.ones(1, 1, 46) ).to(device)
+    print(greedy_decode(model, src, src_mask, max_len=46, start_symbol=1))
+    print("Reference:", tgt_test[i, 0:46])
 
 
 
