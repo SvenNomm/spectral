@@ -251,10 +251,10 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-#def make_model(src_vocab, tgt_vocab, N=6,
-#               d_model=512, d_ff=2048, h=8, dropout=0.1):   # d_ff = 2048
-def make_model(src_vocab, tgt_vocab, N=2,
-                   d_model=64, d_ff=2048, h=32, dropout=0.1):  # d_ff = 2048
+def make_model(src_vocab, tgt_vocab, N=6,
+               d_model=512, d_ff=2048, h=8, dropout=0.1):   # d_ff = 2048
+#def make_model(src_vocab, tgt_vocab, N=2,
+#                   d_model=64, d_ff=2048, h=32, dropout=0.1):  # d_ff = 2048
     "Helper: Construct a model from hyperparameters."
     c = copy.deepcopy
     attn = MultiHeadedAttention(h, d_model)
@@ -272,7 +272,8 @@ def make_model(src_vocab, tgt_vocab, N=2,
     # Initialize parameters with Glorot / fan_avg.
     for p in model.parameters():
         if p.dim() > 1:
-            nn.init.xavier_uniform(p)
+            nn.init.xavier_uniform_(p)
+            #nn.init.xavier_uniform_nn.init.xavier_uniform(p)
     return model
 
 
@@ -572,11 +573,11 @@ model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
 for epoch in range(300):
    print(epoch)
    model.train()
-   run_epoch(data_gen_1(V, id_train, tgt_train, 5, 84, device), model,
+   run_epoch(data_gen_1(V, id_train, tgt_train, 40, 84, device), model,
              SimpleLossCompute(model.generator, criterion, model_opt))
    print("eval")
    model.eval()
-   print(run_epoch(data_gen_1(V, id_train, tgt_train, 5, 84, device), model,
+   print(run_epoch(data_gen_1(V, id_train, tgt_train, 40, 84, device), model,
                    SimpleLossCompute(model.generator, criterion, None)))
 
 # for epoch in range(10):
