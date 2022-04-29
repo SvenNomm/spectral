@@ -82,7 +82,7 @@ def train_model(train_x, train_y):
     train_x = train_x.reshape(rows, cols, 1)
     print("training...")
     model.fit(train_x, train_y,
-        epochs=200,
+        epochs=1000,
         batch_size=2800,
         verbose=2)
     #for i in range(0, rows):

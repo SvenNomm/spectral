@@ -250,8 +250,10 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-def make_model(src_vocab, tgt_vocab, N=6,
-               d_model=512, d_ff=2048, h=8, dropout=0.1):   # d_ff = 2048
+#def make_model(src_vocab, tgt_vocab, N=6,
+#               d_model=512, d_ff=2048, h=8, dropout=0.1):   # d_ff = 2048
+def make_model(src_vocab, tgt_vocab, N=2,
+                   d_model=64, d_ff=2048, h=32, dropout=0.1):  # d_ff = 2048
     "Helper: Construct a model from hyperparameters."
     c = copy.deepcopy
     attn = MultiHeadedAttention(h, d_model)
@@ -477,9 +479,10 @@ def rebatch(pad_idx, batch):
     src, trg = batch.src.transpose(0, 1), batch.trg.transpose(0, 1)
     return Batch(src, trg, pad_idx)
 
+
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
     memory = model.encode(src, src_mask)
-    ys = torch.ones(1, 1).fill_(start_symbol).type_as(src.data)
+    ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data)
     for i in range(max_len-1):
         out = model.decode(memory, src_mask,
                            Variable(ys),
@@ -489,12 +492,13 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
         _, next_word = torch.max(prob, dim = 1)
         next_word = next_word.data[0]
         ys = torch.cat([ys, torch.ones(1, 1).type_as(src.data).fill_(next_word)], dim=1)
+        #ys = torch.sum(src * torch.sum(model.generator(out), (1)))
     return ys
 
 ### Actual code starts here###
 #pp_type = '_raw_'
-pp_type = '_normalized_'
-#pp_type = '_log_scale_'
+#pp_type = '_normalized_'
+pp_type = '_log_scale_'
 #pp_type = '_norm_log_'
 #pp_type = '_log_norm_'
 
@@ -502,7 +506,7 @@ model_path = return_model_path()
 #model_name = 'transformer_103_22_2022_22_24_26'
 #model_name = 'transformer_103_23_2022_20_54_50'
 #model_name = 'transformer_103_27_2022_00_11_49'
-model_name = 'transformer_1__normalized__101_04_08_2022_14_08_22'
+model_name = 'transformer_1__log_scale__1001_04_18_2022_18_46_58'
 #model = TheModelClass(*args, **kwargs)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = torch.load(model_path + model_name).to(device)
@@ -535,16 +539,16 @@ X0 = initial_data_train.astype(np.float32)
 Y0 = target_data_train.astype(np.float32)
 
 
-bins_initial = return_range(100, initial_data_train, initial_data_test)
+bins_initial = return_range(1000, initial_data_train, initial_data_test)
 id_train = tokenize_numeric(initial_data_train, bins_initial)
 id_test = tokenize_numeric(initial_data_test, bins_initial)
 #dd = np.random.randint(1, 100, size=(20, 43))
 
-bins_target = return_range(100, target_data_train, target_data_test)
+bins_target = return_range(1000, target_data_train, target_data_test)
 tgt_train = tokenize_numeric(target_data_train, bins_target)
 tgt_test = tokenize_numeric(target_data_test, bins_target)
 
-V = 101
+V = 1001
 
 criterion = LabelSmoothing(size=V, padding_idx=0, smoothing=0.0)
 #model = make_model(V, V, N=2)
@@ -609,7 +613,8 @@ def plot_wrapper(X, Y):
         print(i)
         b = predd.detach().numpy()
         #print(b)
-        plt.plot(b[0,:], color='red', linewidth=0.1)
+        plt.plot(b[0, :], color='red', linewidth=0.1)
+        #plt.plot(Y[i, :] - b[0,:], color='green', linewidth=0.1)
     plt.show()
     return pred
 
@@ -631,7 +636,7 @@ y_hat = []
 goodness_descriptors = []
 for i in range(0, testing_set_power):
     forecasted = token2numeric(pred[i], bins_target)
-    mse, rho, max_test, max_hat, delta_max_val, delta_max_loc = goodness_descriptor(target_data_test[i, :], forecasted[0,:])
+    mse, rho, max_test, max_hat, delta_max_val, delta_max_loc = goodness_descriptor(target_data_test[i, :], forecasted[0, :])
     goodness_descriptors.append([int(valid_data_index.loc[i]), mse, rho, max_test, max_hat, delta_max_val, delta_max_loc])
     #plt.plot(target_data_test[i, :], color='blue', linewidth=0.1)
     #plt.plot(forecasted[0, :], color='red', linewidth=0.1)

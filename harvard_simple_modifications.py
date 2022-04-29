@@ -252,7 +252,7 @@ class PositionalEncoding(nn.Module):
 #def make_model(src_vocab, tgt_vocab, N=6,
 #               d_model=512, d_ff=2048, h=8, dropout=0.1):   # d_ff = 2048
 def make_model(src_vocab, tgt_vocab, N=2,
-                   d_model=64, d_ff=256, h=2, dropout=0.1):  # d_ff = 2048
+                   d_model=64, d_ff=2048, h=32, dropout=0.1):  # d_ff = 2048
     "Helper: Construct a model from hyperparameters."
     c = copy.deepcopy
     attn = MultiHeadedAttention(h, d_model)
@@ -379,6 +379,7 @@ class LabelSmoothing(nn.Module):
     def __init__(self, size, padding_idx, smoothing=0.0):
         super(LabelSmoothing, self).__init__()
         self.criterion = nn.KLDivLoss(size_average=False)
+        #self.criterion = nn.MSELoss()
         self.padding_idx = padding_idx
         self.confidence = 1.0 - smoothing
         self.smoothing = smoothing
@@ -466,6 +467,7 @@ class SimpleLossCompute:
         x = self.generator(x)
         loss = self.criterion(x.contiguous().view(-1, x.size(-1)),
                               y.contiguous().view(-1)) / norm
+        #loss = self.criterion(torch.sum(x, (0)), torch.sum(y, (0)))  # / norm possible hack
         loss.backward()
         if self.opt is not None:
             self.opt.step()
@@ -522,12 +524,26 @@ tgt_test = tokenize_numeric(target_data_test, bins_target)
 
 V = 1001
 
-fig2, axis = plt.subplots()
-
+# fig2, axis = plt.subplots(2)
+#
 # for i in range(0, len(tgt_train)):
-#     plt.plot(tgt_train[i, :], color='blue', linewidth=0.5)
-#     plt.plot(id_train[i,:], color='orange', linewidth=0.1)
-# #plt.title("validation for", str(test_index.loc[i]))
+#      axis[0].plot(initial_data_train[i, :], color='blue', linewidth=0.1)
+#      axis[1].plot(id_train[i, :], color='orange', linewidth=0.1)
+#
+# plt.show()
+#
+#
+# fig3, axis3 = plt.subplots(2)
+# for i in range(0, len(id_test)):
+#      axis3[0].plot(initial_data_test[i, :], color='blue', linewidth=0.1)
+#      axis3[1].plot(id_test[i, :], color='orange', linewidth=0.1)
+#
+# plt.show()
+#
+# fig4, axis4 = plt.subplots(2)
+# for i in range(0, len(tgt_test)):
+#      axis4[0].plot(target_data_test[i, :], color='blue', linewidth=0.1)
+#      axis4[1].plot(tgt_test[i, :], color='orange', linewidth=0.1)
 #
 # plt.show()
 
@@ -551,14 +567,14 @@ model_opt = NoamOpt(model.src_embed[0].d_model, 1, 400,
 #    print(run_epoch(data_gen(V, 20, 20, device), model,
 #                    SimpleLossCompute(model.generator, criterion, None)))
 
-for epoch in range(200):
+for epoch in range(300):
    print(epoch)
    model.train()
-   run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
+   run_epoch(data_gen_1(V, id_train, tgt_train, 40, 84, device), model,
              SimpleLossCompute(model.generator, criterion, model_opt))
    print("eval")
    model.eval()
-   print(run_epoch(data_gen_1(V, id_train, tgt_train, 20, 20, device), model,
+   print(run_epoch(data_gen_1(V, id_train, tgt_train, 40, 84, device), model,
                    SimpleLossCompute(model.generator, criterion, None)))
 
 # for epoch in range(10):
@@ -568,9 +584,6 @@ for epoch in range(200):
 #    model.eval()
 #    print(run_epoch(data_gen_2(V, 20, 20, device), model,
 #                    SimpleLossCompute(model.generator, criterion, None)))
-
-
-
 
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
@@ -585,7 +598,8 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
         _, next_word = torch.max(prob, dim = 1)
         next_word = next_word.data[0]
         ys = torch.cat([ys, torch.ones(1, 1).type_as(src.data).fill_(next_word)], dim=1)
-    return ys
+        #prob = torch.sum(src * torch.sum(model.generator(out), (1)))
+    return prob
 
 
 start_time = datetime.datetime.now()
